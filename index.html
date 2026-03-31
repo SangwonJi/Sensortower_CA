@@ -3,526 +3,677 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SensorTower 경쟁 분석 대시보드</title>
+    <title>SensorTower Competitive Intelligence</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
     <style>
         :root {
-            --bg: #0f172a;
-            --surface: #1e293b;
-            --surface2: #273549;
-            --border: #334155;
-            --text: #f1f5f9;
-            --muted: #64748b;
-            --pubg: #3b82f6;
+            --bg:       #F1F5F9;
+            --white:    #FFFFFF;
+            --border:   #E2E8F0;
+            --text:     #0F172A;
+            --muted:    #64748B;
+            --light:    #94A3B8;
+            --pubg:     #1D4ED8;
+            --pubg-bg:  #EFF6FF;
+            --pubg-bd:  #BFDBFE;
+            --up:       #16A34A;
+            --up-bg:    #F0FDF4;
+            --dn:       #DC2626;
+            --dn-bg:    #FEF2F2;
+            --header:   #0F172A;
         }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            min-height: 100vh;
-        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
 
         /* ── Header ── */
-        .header {
-            background: var(--surface);
-            border-bottom: 1px solid var(--border);
-            padding: 16px 32px;
-        }
-        .header h1 {
-            font-size: 18px;
-            font-weight: 700;
-            background: linear-gradient(90deg, #60a5fa, #818cf8);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        .header p { font-size: 12px; color: var(--muted); margin-top: 3px; }
-
-        /* ── Main ── */
-        .main { max-width: 1400px; margin: 0 auto; padding: 24px 32px; }
+        .header { background:var(--header); color:#F1F5F9; padding:18px 40px; display:flex; justify-content:space-between; align-items:center; }
+        .header-left h1 { font-size:17px; font-weight:700; letter-spacing:-.3px; }
+        .header-left p  { font-size:12px; color:#94A3B8; margin-top:2px; }
+        .header-right   { font-size:12px; color:#64748B; text-align:right; line-height:1.6; }
 
         /* ── Upload ── */
+        .upload-wrap { padding:20px 40px 0; }
         .upload-zone {
-            background: var(--surface);
-            border: 2px dashed var(--border);
-            border-radius: 12px;
-            padding: 32px;
-            text-align: center;
-            cursor: pointer;
-            transition: border-color .2s, background .2s;
-            margin-bottom: 24px;
+            background:var(--white);
+            border:1.5px dashed var(--border);
+            border-radius:10px;
+            padding:20px 28px;
+            display:flex;
+            align-items:center;
+            gap:16px;
+            cursor:pointer;
+            transition:border-color .2s, background .2s;
         }
-        .upload-zone:hover, .upload-zone.over {
-            border-color: var(--pubg);
-            background: rgba(59,130,246,.04);
-        }
-        .upload-zone .up-icon { font-size: 32px; margin-bottom: 10px; }
-        .upload-zone h3 { font-size: 15px; margin-bottom: 4px; }
-        .upload-zone p { font-size: 13px; color: var(--muted); }
-
-        .chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 16px; }
+        .upload-zone:hover, .upload-zone.over { border-color:var(--pubg); background:var(--pubg-bg); }
+        .upload-zone .uz-icon { font-size:24px; flex-shrink:0; }
+        .upload-zone h3 { font-size:14px; font-weight:600; }
+        .upload-zone p  { font-size:12px; color:var(--muted); margin-top:2px; }
+        .chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
         .chip {
-            background: rgba(59,130,246,.12);
-            border: 1px solid rgba(59,130,246,.3);
-            border-radius: 20px;
-            padding: 4px 10px 4px 12px;
-            font-size: 12px;
-            color: #93c5fd;
-            display: flex;
-            align-items: center;
-            gap: 6px;
+            background:#EFF6FF; border:1px solid #BFDBFE;
+            border-radius:16px; padding:3px 10px 3px 12px;
+            font-size:11px; color:#1D4ED8;
+            display:flex; align-items:center; gap:5px;
         }
-        .chip-x { cursor: pointer; color: #64748b; font-size: 14px; transition: color .15s; }
-        .chip-x:hover { color: #ef4444; }
+        .chip-x { cursor:pointer; color:#93C5FD; font-size:13px; transition:color .15s; }
+        .chip-x:hover { color:var(--dn); }
 
-        /* ── Tabs ── */
-        .tabs {
-            display: flex;
-            border-bottom: 1px solid var(--border);
-            margin-bottom: 24px;
-            gap: 2px;
-        }
-        .tab {
-            padding: 10px 22px;
-            font-size: 14px;
-            font-weight: 500;
-            color: var(--muted);
-            cursor: pointer;
-            border-radius: 8px 8px 0 0;
-            border: 1px solid transparent;
-            border-bottom: none;
-            transition: color .2s;
-        }
-        .tab:hover { color: var(--text); }
-        .tab.active {
-            color: var(--text);
-            background: var(--surface);
-            border-color: var(--border);
-            margin-bottom: -1px;
-        }
-        .tab-dot {
-            display: inline-block;
-            width: 6px; height: 6px;
-            border-radius: 50%;
-            background: #22c55e;
-            margin-left: 6px;
-            vertical-align: middle;
-            opacity: 0;
-            transition: opacity .2s;
-        }
-        .tab.has-data .tab-dot { opacity: 1; }
+        /* ── Main ── */
+        .main { padding:24px 40px; max-width:1400px; margin:0 auto; }
 
-        /* ── Tab content ── */
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
+        /* ── Period banner ── */
+        .period-banner {
+            display:flex; align-items:center; gap:16px;
+            background:var(--white);
+            border:1px solid var(--border);
+            border-radius:8px;
+            padding:12px 20px;
+            margin-bottom:20px;
+            font-size:13px;
+        }
+        .period-banner .pb-label { color:var(--muted); }
+        .period-banner .pb-val   { font-weight:700; }
+        .pb-sep { color:var(--border); }
+        .badge {
+            background:#FFF7ED; border:1px solid #FED7AA;
+            color:#EA580C; border-radius:4px;
+            padding:2px 8px; font-size:11px; font-weight:600;
+        }
+        .badge.ok { background:#F0FDF4; border-color:#BBF7D0; color:#16A34A; }
+
+        /* ── Section title ── */
+        .sec-title {
+            font-size:11px; font-weight:700;
+            text-transform:uppercase; letter-spacing:.8px;
+            color:var(--muted); margin-bottom:12px;
+            display:flex; align-items:center; gap:8px;
+        }
+        .sec-title::after { content:''; flex:1; height:1px; background:var(--border); }
+
+        /* ── PUBG Spotlight ── */
+        .spotlight {
+            background:var(--white);
+            border:1px solid var(--pubg-bd);
+            border-left:4px solid var(--pubg);
+            border-radius:8px;
+            padding:20px 24px;
+            margin-bottom:20px;
+        }
+        .spotlight-header {
+            display:flex; justify-content:space-between; align-items:center;
+            margin-bottom:16px;
+        }
+        .spotlight-header h2 { font-size:16px; font-weight:700; color:var(--pubg); }
+        .spotlight-header .sp-period { font-size:12px; color:var(--muted); }
+        .sp-cards { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+        @media(max-width:700px){ .sp-cards { grid-template-columns:1fr; } }
+        .sp-card {
+            background:var(--pubg-bg);
+            border:1px solid var(--pubg-bd);
+            border-radius:8px;
+            padding:14px 16px;
+        }
+        .sp-card.na-card {
+            background:var(--bg);
+            border-color:var(--border);
+            opacity:.6;
+        }
+        .sp-card-label { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.5px; color:var(--pubg); margin-bottom:8px; }
+        .sp-card.na-card .sp-card-label { color:var(--muted); }
+        .sp-val { font-size:28px; font-weight:800; letter-spacing:-1px; color:var(--text); line-height:1; margin-bottom:4px; }
+        .sp-sub { font-size:11px; color:var(--muted); margin-bottom:10px; }
+        .sp-changes { display:flex; flex-direction:column; gap:4px; }
+        .change-row { display:flex; justify-content:space-between; align-items:center; }
+        .change-label { font-size:11px; font-weight:600; color:var(--muted); }
+        .change-val { font-size:13px; font-weight:700; padding:2px 8px; border-radius:4px; }
+        .change-val.up   { color:var(--up); background:var(--up-bg); }
+        .change-val.dn   { color:var(--dn); background:var(--dn-bg); }
+        .change-val.flat { color:var(--muted); background:var(--bg); }
+        .change-val.na   { color:var(--light); background:var(--bg); font-weight:400; font-size:12px; }
+
+        /* ── Competitive Table ── */
+        .table-card {
+            background:var(--white);
+            border:1px solid var(--border);
+            border-radius:8px;
+            overflow:auto;
+            margin-bottom:20px;
+        }
+        table { width:100%; border-collapse:collapse; font-size:13px; white-space:nowrap; }
+        thead tr:first-child th {
+            background:#F8FAFC;
+            padding:10px 14px 6px;
+            text-align:center;
+            font-size:11px; font-weight:700;
+            text-transform:uppercase; letter-spacing:.5px;
+            color:var(--muted);
+            border-bottom:1px solid var(--border);
+        }
+        thead tr:first-child th:first-child { text-align:left; }
+        thead tr:last-child th {
+            background:#F8FAFC;
+            padding:6px 14px 10px;
+            text-align:right;
+            font-size:11px; font-weight:600;
+            color:var(--light);
+            border-bottom:2px solid var(--border);
+        }
+        thead tr:last-child th:first-child { text-align:left; color:var(--muted); }
+        .th-group { border-left:1px solid var(--border); }
+        tbody td {
+            padding:10px 14px;
+            border-bottom:1px solid #F1F5F9;
+            text-align:right;
+            color:var(--muted);
+        }
+        tbody td:first-child { text-align:left; font-weight:600; color:var(--text); }
+        tbody td.td-group { border-left:1px solid var(--border); }
+        tbody tr.pubg-row td { background:var(--pubg-bg); }
+        tbody tr.pubg-row td:first-child { color:var(--pubg); }
+        tbody tr:last-child td { border-bottom:none; }
+        tbody tr:hover td { background:#F8FAFC; }
+        tbody tr.pubg-row:hover td { background:#DBEAFE; }
+        .td-val { font-weight:700; color:var(--text); }
+        .td-up  { color:var(--up); font-weight:600; }
+        .td-dn  { color:var(--dn); font-weight:600; }
+        .td-na  { color:var(--light); }
+        .td-game { display:flex; align-items:center; gap:8px; }
+        .td-dot  { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+
+        /* ── Trend Chart ── */
+        .trend-card {
+            background:var(--white);
+            border:1px solid var(--border);
+            border-radius:8px;
+            padding:20px 24px;
+            margin-bottom:20px;
+        }
+        .trend-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+        .metric-toggle { display:flex; gap:4px; }
+        .mt-btn {
+            padding:5px 14px;
+            border:1px solid var(--border);
+            border-radius:6px;
+            font-size:12px; font-weight:500;
+            background:var(--white);
+            color:var(--muted);
+            cursor:pointer;
+            transition:all .15s;
+        }
+        .mt-btn:hover { border-color:var(--pubg); color:var(--pubg); }
+        .mt-btn.active { background:var(--pubg); color:#fff; border-color:var(--pubg); }
+        .trend-canvas-wrap { height:280px; position:relative; }
 
         /* ── Empty state ── */
-        .empty { text-align: center; padding: 80px 0; color: var(--muted); }
-        .empty .e-icon { font-size: 44px; margin-bottom: 12px; }
-        .empty h3 { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
-        .empty p { font-size: 13px; }
+        .empty { text-align:center; padding:80px 20px; color:var(--muted); }
+        .empty .e-icon { font-size:40px; margin-bottom:12px; }
+        .empty h3 { font-size:16px; color:var(--text); font-weight:600; margin-bottom:6px; }
+        .empty p { font-size:13px; }
 
-        /* ── Date badge ── */
-        .date-badge {
-            display: inline-block;
-            background: var(--surface2);
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            padding: 4px 12px;
-            font-size: 12px;
-            color: var(--muted);
-            margin-bottom: 20px;
-        }
-
-        /* ── Section label ── */
-        .sec-label {
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: .8px;
-            color: var(--muted);
-            margin-bottom: 12px;
-        }
-
-        /* ── Summary cards ── */
-        .cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
-            gap: 12px;
-            margin-bottom: 24px;
-        }
-        .card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 14px 16px;
-        }
-        .card.pubg-card {
-            border-color: rgba(59,130,246,.5);
-            background: rgba(59,130,246,.05);
-        }
-        .card-title {
-            font-size: 11px;
-            color: var(--muted);
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            overflow: hidden;
-        }
-        .card.pubg-card .card-title { color: #93c5fd; }
-        .card-title span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .c-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-        .card-val {
-            font-size: 22px;
-            font-weight: 700;
-            line-height: 1;
-            margin-bottom: 4px;
-        }
-        .card.pubg-card .card-val { color: #60a5fa; }
-        .card-sub { font-size: 11px; color: var(--muted); }
-        .vs-above { color: #f97316; }
-        .vs-below { color: #475569; }
-        .vs-base  { color: #22c55e; }
-
-        /* ── Chart ── */
-        .chart-wrap {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 24px;
-            height: 360px;
-            position: relative;
-        }
-
-        /* ── Table ── */
-        .table-wrap {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            overflow: auto;
-            max-height: 360px;
-        }
-        table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        thead th {
-            background: var(--surface2);
-            padding: 10px 14px;
-            text-align: right;
-            font-weight: 600;
-            white-space: nowrap;
-            border-bottom: 1px solid var(--border);
-            position: sticky;
-            top: 0;
-            z-index: 1;
-        }
-        thead th:first-child { text-align: left; }
-        thead th.p-col { color: #93c5fd; }
-        tbody tr:hover { background: rgba(255,255,255,.025); }
-        tbody td {
-            padding: 8px 14px;
-            text-align: right;
-            border-bottom: 1px solid rgba(51,65,85,.5);
-            color: #94a3b8;
-        }
-        tbody td:first-child { text-align: left; color: var(--muted); }
-        tbody td.p-col { color: #93c5fd; font-weight: 500; }
-        tbody tr:last-child td { border-bottom: none; }
+        /* ── Footer ── */
+        .footer { padding:20px 40px; font-size:11px; color:var(--light); border-top:1px solid var(--border); display:flex; justify-content:space-between; }
     </style>
 </head>
 <body>
 
 <div class="header">
-    <h1>SensorTower 경쟁 분석 대시보드</h1>
-    <p>DAU · 다운로드 · 매출 비교 — PUBG MOBILE 기준</p>
+    <div class="header-left">
+        <h1>SensorTower Competitive Intelligence</h1>
+        <p>Mobile Battle Royale — Monthly Performance Report</p>
+    </div>
+    <div class="header-right" id="headerRight">
+        데이터를 업로드하면<br>리포트가 자동 생성됩니다
+    </div>
 </div>
 
-<div class="main">
-
-    <!-- Upload Zone -->
+<div class="upload-wrap">
     <div class="upload-zone" id="uploadZone">
         <input type="file" id="fileInput" accept=".csv" multiple style="display:none">
-        <div class="up-icon">📊</div>
-        <h3>SensorTower CSV 파일 업로드</h3>
-        <p>DAU · 다운로드 · 매출 파일을 드래그&amp;드롭하거나 클릭해서 선택하세요 (여러 파일 동시 가능)</p>
-        <div class="chips" id="chips"></div>
+        <div class="uz-icon">📂</div>
+        <div style="flex:1">
+            <h3>SensorTower CSV 업로드</h3>
+            <p>DAU · 다운로드 · 매출 파일 (기간이 길수록 MoM / YoY 정확도 향상)</p>
+            <div class="chips" id="chips"></div>
+        </div>
+        <div style="font-size:12px;color:var(--light);flex-shrink:0">클릭 또는<br>드래그&드롭</div>
     </div>
+</div>
 
-    <!-- Tabs -->
-    <div class="tabs">
-        <div class="tab active" data-tab="DAU">DAU<span class="tab-dot"></span></div>
-        <div class="tab" data-tab="Downloads">다운로드<span class="tab-dot"></span></div>
-        <div class="tab" data-tab="Revenue">매출<span class="tab-dot"></span></div>
+<div class="main" id="mainReport">
+    <div class="empty">
+        <div class="e-icon">📊</div>
+        <h3>리포트를 생성하려면 CSV 파일을 업로드하세요</h3>
+        <p>SensorTower에서 DAU · 다운로드 · 매출 데이터를 내려받아 위에 올려주세요<br>
+           MoM(전월 대비) 및 YoY(전년 동월 대비) 분석을 위해 최소 2개월 이상 데이터를 권장합니다</p>
     </div>
+</div>
 
-    <div id="tab-DAU"       class="tab-content active"></div>
-    <div id="tab-Downloads" class="tab-content"></div>
-    <div id="tab-Revenue"   class="tab-content"></div>
+<div class="footer">
+    <span>SensorTower Competitive Intelligence Dashboard</span>
+    <span>Powered by PUBG MOBILE Analytics</span>
 </div>
 
 <script>
-/* ── Config ── */
-const METRIC_KEYWORDS = {
+/* ════════════════════════════════════════════
+   CONFIG
+════════════════════════════════════════════ */
+const METRIC_KW = {
     DAU:       ['DAU'],
-    Downloads: ['Downloads', 'Download', '다운로드'],
-    Revenue:   ['Revenue', '매출']
+    Downloads: ['Downloads','Download','다운로드'],
+    Revenue:   ['Revenue','매출']
 };
+const METRIC_CFG = {
+    DAU:       { label:'DAU',    sub:'일 평균',  agg:'avg' },
+    Downloads: { label:'다운로드', sub:'월 합계', agg:'sum' },
+    Revenue:   { label:'매출',    sub:'월 합계',  agg:'sum' }
+};
+const COLORS_OTHER = ['#EA580C','#DC2626','#059669','#7C3AED','#D97706','#0891B2','#DB2777'];
 
-const COLORS_OTHER = ['#f97316','#ef4444','#10b981','#8b5cf6','#f59e0b','#06b6d4','#ec4899','#84cc16'];
-
-/* ── State ── */
 const state = {
-    data:   { DAU: null, Downloads: null, Revenue: null },
-    charts: {},
-    files:  {}   // metricType → filename
+    raw:    { DAU:null, Downloads:null, Revenue:null },
+    files:  {},
+    chart:  null,
+    activeTrend: null
 };
 
-/* ── Utils ── */
-function fmt(n) {
-    if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
-    if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
-    if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
-    return n.toLocaleString();
+/* ════════════════════════════════════════════
+   UTILS
+════════════════════════════════════════════ */
+function fmt(n, type) {
+    if (n == null) return '—';
+    if (n >= 1e9) return (n/1e9).toFixed(2) + 'B';
+    if (n >= 1e6) return (n/1e6).toFixed(2) + 'M';
+    if (n >= 1e3) return (n/1e3).toFixed(1) + 'K';
+    return Math.round(n).toLocaleString();
 }
-function avg(arr) { return arr.reduce((a, b) => a + b, 0) / arr.length; }
+function fmtPct(v) {
+    if (v == null) return null;
+    const sign = v >= 0 ? '+' : '';
+    return `${sign}${v.toFixed(1)}%`;
+}
+function fmtMonth(m) {
+    if (!m) return '';
+    const [y, mo] = m.split('-');
+    const names = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return `${names[parseInt(mo)-1]} ${y}`;
+}
 function isPubg(name) { return name.toUpperCase().includes('PUBG'); }
+function avg(arr)  { return arr.reduce((a,b)=>a+b,0)/arr.length; }
+function sum(arr)  { return arr.reduce((a,b)=>a+b,0); }
+function pct(cur, prev) {
+    if (prev == null || prev === 0 || cur == null) return null;
+    return ((cur - prev) / prev) * 100;
+}
+function prevMonth(m) {
+    const [y, mo] = m.split('-').map(Number);
+    let py=y, pm=mo-1;
+    if (pm===0) { pm=12; py--; }
+    return `${py}-${String(pm).padStart(2,'0')}`;
+}
+function yoyMonth(m) {
+    const [y, mo] = m.split('-');
+    return `${parseInt(y)-1}-${mo}`;
+}
+function changeClass(v) {
+    if (v == null) return 'na';
+    if (Math.abs(v) < 0.05) return 'flat';
+    return v > 0 ? 'up' : 'dn';
+}
+function arrow(v) {
+    if (v == null) return '';
+    if (v > 0) return '▲ ';
+    if (v < 0) return '▼ ';
+    return '— ';
+}
 
-/* ── Metric detection ── */
-function detectMetricFromHeaders(headers) {
-    for (const [metric, kws] of Object.entries(METRIC_KEYWORDS)) {
-        if (headers.some(h => kws.some(k => h.trimEnd().endsWith(k)))) return metric;
-    }
+/* ════════════════════════════════════════════
+   CSV PARSING
+════════════════════════════════════════════ */
+function detectMetric(headers) {
+    for (const [m, kws] of Object.entries(METRIC_KW))
+        if (headers.some(h => kws.some(k => h.trimEnd().endsWith(k)))) return m;
     return null;
 }
-function detectMetricFromFilename(name) {
+function detectMetricFile(name) {
     const n = name.toLowerCase();
-    if (n.includes('dau'))                            return 'DAU';
+    if (n.includes('dau')) return 'DAU';
     if (n.includes('download') || n.includes('다운로드')) return 'Downloads';
     if (n.includes('revenue')  || n.includes('매출'))  return 'Revenue';
     return null;
 }
 function extractGame(col, metric) {
-    for (const k of (METRIC_KEYWORDS[metric] || [])) {
-        if (col.trimEnd().endsWith(' ' + k)) return col.slice(0, -(k.length + 1)).trim();
-    }
+    for (const k of (METRIC_KW[metric]||[]))
+        if (col.trimEnd().endsWith(' '+k)) return col.slice(0,-(k.length+1)).trim();
     return col.trim();
 }
-
-/* ── CSV parsing ── */
-function parseCSV(csvText, filename) {
-    const result = Papa.parse(csvText.trim(), { header: true, skipEmptyLines: true });
-    if (!result.data?.length) return { error: '데이터가 없습니다.' };
-
-    const headers  = result.meta.fields;
+function parseCSV(text, filename) {
+    const r = Papa.parse(text.trim(), { header:true, skipEmptyLines:true });
+    if (!r.data?.length) return { error:'데이터 없음' };
+    const headers  = r.meta.fields;
     const dataCols = headers.slice(1);
-
-    let metric = detectMetricFromHeaders(dataCols) || detectMetricFromFilename(filename);
-    if (!metric) return { error: '지표 타입을 인식할 수 없습니다. (DAU / 다운로드 / 매출)' };
-
+    const metric   = detectMetric(dataCols) || detectMetricFile(filename);
+    if (!metric) return { error:'지표 타입 인식 불가' };
     const games = {};
-    dataCols.forEach(h => { games[extractGame(h, metric)] = []; });
-
+    dataCols.forEach(h => { games[extractGame(h,metric)] = []; });
     const dates = [];
-    result.data.forEach(row => {
+    r.data.forEach(row => {
         const vals = Object.values(row);
         dates.push(vals[0]);
-        dataCols.forEach((h, i) => {
-            games[extractGame(h, metric)].push(
-                parseFloat(String(vals[i + 1]).replace(/,/g, '')) || 0
-            );
+        dataCols.forEach((h,i) => {
+            games[extractGame(h,metric)].push(parseFloat(String(vals[i+1]).replace(/,/g,''))||0);
         });
     });
-
     return { metric, dates, games };
 }
 
-/* ── Render ── */
-function renderContent(metric) {
-    const data = state.data[metric];
-    const el   = document.getElementById('tab-' + metric);
+/* ════════════════════════════════════════════
+   MONTHLY AGGREGATION
+════════════════════════════════════════════ */
+function getMonthly(metric) {
+    const { dates, games } = state.raw[metric];
+    const allMonths = [...new Set(dates.map(d=>d.substring(0,7)))].sort();
+    const agg = METRIC_CFG[metric].agg;
+    const monthly = {};
+    Object.entries(games).forEach(([game, vals]) => {
+        monthly[game] = {};
+        allMonths.forEach(m => {
+            const idxs = dates.reduce((a,d,i) => d.startsWith(m) ? [...a,i] : a, []);
+            const slice = idxs.map(i => vals[i]);
+            monthly[game][m] = slice.length ? (agg==='avg' ? avg(slice) : sum(slice)) : null;
+        });
+    });
+    return { months:allMonths, games:monthly };
+}
 
-    const labels = { DAU: 'DAU', Downloads: '다운로드', Revenue: '매출' };
-    const icons  = { DAU: '📈',  Downloads: '⬇️',       Revenue: '💰'  };
+/* ════════════════════════════════════════════
+   COLOR MAP
+════════════════════════════════════════════ */
+function buildColorMap(sortedGames) {
+    const map = {};
+    let ci = 0;
+    sortedGames.forEach(g => {
+        map[g] = isPubg(g) ? '#1D4ED8' : COLORS_OTHER[ci++ % COLORS_OTHER.length];
+    });
+    return map;
+}
 
-    if (!data) {
-        el.innerHTML = `
+/* ════════════════════════════════════════════
+   RENDER
+════════════════════════════════════════════ */
+function render() {
+    const available = Object.keys(state.raw).filter(m => state.raw[m]);
+    if (!available.length) {
+        document.getElementById('mainReport').innerHTML = `
             <div class="empty">
-                <div class="e-icon">${icons[metric]}</div>
-                <h3>${labels[metric]} 파일을 업로드해주세요</h3>
-                <p>SensorTower에서 ${labels[metric]} 데이터를 CSV로 내려받아 올려주세요</p>
+                <div class="e-icon">📊</div>
+                <h3>리포트를 생성하려면 CSV 파일을 업로드하세요</h3>
+                <p>SensorTower에서 DAU · 다운로드 · 매출 데이터를 내려받아 위에 올려주세요<br>
+                   MoM(전월 대비) 및 YoY(전년 동월 대비) 분석을 위해 최소 2개월 이상 데이터를 권장합니다</p>
             </div>`;
+        document.getElementById('headerRight').innerHTML = '데이터를 업로드하면<br>리포트가 자동 생성됩니다';
         return;
     }
 
-    const gameNames = Object.keys(data.games);
-    const pubgName  = gameNames.find(isPubg) || gameNames[0];
-    const pubgAvg   = avg(data.games[pubgName]);
+    // Use first available metric to determine periods
+    const primaryMetric = available.includes('DAU') ? 'DAU' : available[0];
+    const primaryMonthly = getMonthly(primaryMetric);
+    const { months } = primaryMonthly;
+    const curM   = months[months.length-1];
+    const prevM  = months.includes(prevMonth(curM)) ? prevMonth(curM) : null;
+    const yoyM   = months.includes(yoyMonth(curM))  ? yoyMonth(curM)  : null;
 
-    // Sort: PUBG first, then descending by avg
-    const sorted = [
-        pubgName,
-        ...gameNames.filter(g => g !== pubgName)
-                    .sort((a, b) => avg(data.games[b]) - avg(data.games[a]))
-    ];
+    // Check if current month is complete (MTD detection)
+    const rawDates = state.raw[primaryMetric].dates;
+    const curDays  = rawDates.filter(d=>d.startsWith(curM)).length;
+    const daysInMonth = new Date(parseInt(curM.split('-')[0]), parseInt(curM.split('-')[1]), 0).getDate();
+    const isMTD = curDays < daysInMonth;
 
-    // Assign colors
-    const colorMap = {};
-    let ci = 0;
-    sorted.forEach(g => {
-        colorMap[g] = isPubg(g) ? '#3b82f6' : COLORS_OTHER[ci++ % COLORS_OTHER.length];
+    // Collect all games across all metrics
+    const allGames = [...new Set(available.flatMap(m => Object.keys(state.raw[m].games)))];
+    const pubgGame = allGames.find(isPubg) || allGames[0];
+    const otherGames = allGames.filter(g=>g!==pubgGame).sort((a,b)=>{
+        const mA = getMonthly(primaryMetric).games[a];
+        const mB = getMonthly(primaryMetric).games[b];
+        if(!mA || !mB) return 0;
+        return (mB[curM]||0)-(mA[curM]||0);
+    });
+    const sortedGames = [pubgGame, ...otherGames];
+    const colorMap = buildColorMap(sortedGames);
+
+    // Header update
+    document.getElementById('headerRight').innerHTML =
+        `기준 월: <strong style="color:#F1F5F9">${fmtMonth(curM)}${isMTD?' MTD':''}</strong><br>${available.map(m=>METRIC_CFG[m].label).join(' · ')} 분석`;
+
+    // Build period banner
+    const periodHTML = `
+        <div class="period-banner">
+            <span class="pb-label">분석 기간</span>
+            <span class="pb-val">${fmtMonth(months[0])} → ${fmtMonth(curM)}</span>
+            <span class="pb-sep">|</span>
+            <span class="pb-label">기준 월</span>
+            <span class="pb-val">${fmtMonth(curM)} ${isMTD?`(${curDays}일 MTD)`:''}</span>
+            <span class="badge ${isMTD?'':'ok'}">${isMTD?'MTD':'Full Month'}</span>
+            <span class="pb-sep">|</span>
+            <span class="pb-label">MoM</span>
+            <span class="pb-val ${prevM?'':''}"> ${prevM ? fmtMonth(prevM) : '—'}</span>
+            <span class="pb-sep">|</span>
+            <span class="pb-label">YoY</span>
+            <span class="pb-val">${yoyM ? fmtMonth(yoyM) : '—'}</span>
+        </div>`;
+
+    // Build PUBG spotlight
+    function spCard(metric) {
+        if (!state.raw[metric]) {
+            return `<div class="sp-card na-card">
+                <div class="sp-card-label">${METRIC_CFG[metric].label}</div>
+                <div class="sp-val" style="font-size:18px;color:var(--light)">데이터 없음</div>
+            </div>`;
+        }
+        const md = getMonthly(metric);
+        const gd = md.games[pubgGame];
+        if (!gd) return '';
+        const cur  = gd[curM];
+        const prev = prevM ? gd[prevM] : null;
+        const yoy  = yoyM  ? gd[yoyM]  : null;
+        const mom  = pct(cur, prev);
+        const yoyP = pct(cur, yoy);
+        return `
+            <div class="sp-card">
+                <div class="sp-card-label">${METRIC_CFG[metric].label}</div>
+                <div class="sp-val">${fmt(cur)}</div>
+                <div class="sp-sub">${METRIC_CFG[metric].sub}</div>
+                <div class="sp-changes">
+                    <div class="change-row">
+                        <span class="change-label">MoM</span>
+                        <span class="change-val ${changeClass(mom)}">${mom!=null ? arrow(mom)+fmtPct(mom) : 'N/A'}</span>
+                    </div>
+                    <div class="change-row">
+                        <span class="change-label">YoY</span>
+                        <span class="change-val ${changeClass(yoyP)}">${yoyP!=null ? arrow(yoyP)+fmtPct(yoyP) : 'N/A'}</span>
+                    </div>
+                </div>
+            </div>`;
+    }
+    const spotlightHTML = `
+        <div class="spotlight">
+            <div class="spotlight-header">
+                <h2>▪ ${pubgGame}</h2>
+                <span class="sp-period">${fmtMonth(curM)}${isMTD?' MTD':''}</span>
+            </div>
+            <div class="sp-cards">
+                ${spCard('DAU')}
+                ${spCard('Downloads')}
+                ${spCard('Revenue')}
+            </div>
+        </div>`;
+
+    // Build competitive table
+    function tdChange(v) {
+        if (v==null) return `<td class="td-na">N/A</td>`;
+        const cls = changeClass(v);
+        const tdCls = cls==='up' ? 'td-up' : cls==='dn' ? 'td-dn' : 'td-na';
+        return `<td class="${tdCls}">${arrow(v)}${fmtPct(v)}</td>`;
+    }
+
+    let theadTop = `<th>게임</th>`;
+    let theadBot = `<th>Game</th>`;
+    available.forEach((m,i) => {
+        theadTop += `<th colspan="3" class="th-group">${METRIC_CFG[m].label}</th>`;
+        theadBot += `<th class="th-group">${fmtMonth(curM)}</th><th>MoM</th><th>YoY</th>`;
     });
 
-    /* -- Cards -- */
-    const cardsHTML = sorted.map(g => {
-        const a    = avg(data.games[g]);
-        const isP  = isPubg(g);
-        let subHTML;
-        if (isP) {
-            subHTML = `<div class="card-sub vs-base">● 기준 게임</div>`;
-        } else {
-            const ratio = a / pubgAvg;
-            const pct   = ((ratio - 1) * 100).toFixed(0);
-            const sign  = ratio >= 1 ? '+' : '';
-            const cls   = ratio > 1 ? 'vs-above' : 'vs-below';
-            subHTML = `<div class="card-sub ${cls}">vs PUBG: ${sign}${pct}%</div>`;
-        }
-        return `
-            <div class="card ${isP ? 'pubg-card' : ''}">
-                <div class="card-title">
-                    <span class="c-dot" style="background:${colorMap[g]}"></span>
-                    <span>${g}</span>
-                </div>
-                <div class="card-val">${fmt(a)}</div>
-                <div class="card-sub" style="margin-bottom:4px">기간 평균</div>
-                ${subHTML}
-            </div>`;
+    const tbodyHTML = sortedGames.map(g => {
+        const isP = isPubg(g);
+        let row = `<tr class="${isP?'pubg-row':''}">
+            <td><div class="td-game">
+                <span class="td-dot" style="background:${colorMap[g]}"></span>
+                ${g}
+            </div></td>`;
+        available.forEach(m => {
+            const md = getMonthly(m);
+            const gd = md.games[g];
+            if (!gd) {
+                row += `<td class="td-group td-na" colspan="3">—</td>`;
+            } else {
+                const cur  = gd[curM];
+                const prev = prevM ? gd[prevM] : null;
+                const yoy  = yoyM  ? gd[yoyM]  : null;
+                row += `<td class="td-val td-group">${fmt(cur)}</td>`;
+                row += tdChange(pct(cur,prev));
+                row += tdChange(pct(cur,yoy));
+            }
+        });
+        row += `</tr>`;
+        return row;
     }).join('');
 
-    /* -- Table -- */
-    const thHTML = `<th>날짜</th>` +
-        sorted.map(g => `<th class="${isPubg(g) ? 'p-col' : ''}">${g}</th>`).join('');
-    const trHTML = data.dates.map((d, i) =>
-        `<tr><td>${d}</td>${
-            sorted.map(g => `<td class="${isPubg(g) ? 'p-col' : ''}">${fmt(data.games[g][i])}</td>`).join('')
-        }</tr>`
-    ).join('');
-
-    const dateRange = `📅 ${data.dates[0]} ~ ${data.dates[data.dates.length - 1]} (${data.dates.length}일)`;
-
-    el.innerHTML = `
-        <div class="date-badge">${dateRange}</div>
-
-        <div class="sec-label">요약</div>
-        <div class="cards">${cardsHTML}</div>
-
-        <div class="sec-label">추이</div>
-        <div class="chart-wrap"><canvas id="chart-${metric}"></canvas></div>
-
-        <div class="sec-label">데이터</div>
-        <div class="table-wrap">
+    const tableHTML = `
+        <div class="table-card">
             <table>
-                <thead><tr>${thHTML}</tr></thead>
-                <tbody>${trHTML}</tbody>
+                <thead>
+                    <tr>${theadTop}</tr>
+                    <tr>${theadBot}</tr>
+                </thead>
+                <tbody>${tbodyHTML}</tbody>
             </table>
         </div>`;
 
-    /* -- Chart -- */
-    if (state.charts[metric]) state.charts[metric].destroy();
-    const ctx = document.getElementById('chart-' + metric).getContext('2d');
-    state.charts[metric] = new Chart(ctx, {
+    // Build trend chart section
+    if (!state.activeTrend || !available.includes(state.activeTrend))
+        state.activeTrend = available[0];
+
+    const toggleHTML = available.map(m =>
+        `<button class="mt-btn ${m===state.activeTrend?'active':''}" data-metric="${m}">${METRIC_CFG[m].label}</button>`
+    ).join('');
+
+    const trendHTML = `
+        <div class="trend-card">
+            <div class="trend-header">
+                <div class="sec-title" style="margin:0;flex:1">월별 추이</div>
+                <div class="metric-toggle">${toggleHTML}</div>
+            </div>
+            <div class="trend-canvas-wrap"><canvas id="trendChart"></canvas></div>
+        </div>`;
+
+    // Assemble report
+    document.getElementById('mainReport').innerHTML =
+        periodHTML +
+        `<div class="sec-title">PUBG MOBILE Spotlight</div>` +
+        spotlightHTML +
+        `<div class="sec-title">Competitive Landscape</div>` +
+        tableHTML +
+        `<div class="sec-title">Monthly Trend</div>` +
+        trendHTML;
+
+    // Wire toggle buttons
+    document.querySelectorAll('.mt-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            state.activeTrend = btn.dataset.metric;
+            render();
+        });
+    });
+
+    // Draw trend chart
+    drawTrend(sortedGames, colorMap);
+}
+
+function drawTrend(sortedGames, colorMap) {
+    const metric = state.activeTrend;
+    if (!state.raw[metric]) return;
+    const md = getMonthly(metric);
+    const { months } = md;
+
+    if (state.chart) state.chart.destroy();
+    const ctx = document.getElementById('trendChart').getContext('2d');
+    state.chart = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: data.dates.map(d => {
-                const [, m, day] = d.split('-');
-                return `${parseInt(m)}/${parseInt(day)}`;
-            }),
-            datasets: sorted.map(g => ({
+            labels: months.map(fmtMonth),
+            datasets: sortedGames.map(g => ({
                 label:           g,
-                data:            data.games[g],
+                data:            months.map(m => md.games[g]?.[m] ?? null),
                 borderColor:     colorMap[g],
                 backgroundColor: 'transparent',
                 borderWidth:     isPubg(g) ? 3 : 1.5,
-                pointRadius:     isPubg(g) ? 3 : 2,
-                pointHoverRadius: 5,
+                pointRadius:     isPubg(g) ? 4 : 2.5,
+                pointHoverRadius: 6,
                 tension:         0.3,
+                spanGaps:        true,
             }))
         },
         options: {
-            responsive:          true,
+            responsive: true,
             maintainAspectRatio: false,
-            interaction:         { mode: 'index', intersect: false },
+            interaction: { mode:'index', intersect:false },
             plugins: {
-                legend: {
-                    labels: { color: '#64748b', boxWidth: 12, font: { size: 12 } }
-                },
+                legend: { labels:{ color:'#64748B', boxWidth:12, font:{size:12} } },
                 tooltip: {
-                    backgroundColor: '#1e293b',
+                    backgroundColor: '#0F172A',
                     borderColor:     '#334155',
                     borderWidth:     1,
-                    titleColor:      '#f1f5f9',
-                    bodyColor:       '#94a3b8',
-                    callbacks: {
-                        label: ctx => ` ${ctx.dataset.label}: ${fmt(ctx.raw)}`
-                    }
+                    titleColor:      '#F1F5F9',
+                    bodyColor:       '#94A3B8',
+                    callbacks: { label: c => ` ${c.dataset.label}: ${fmt(c.raw)}` }
                 }
             },
             scales: {
-                x: {
-                    grid:  { color: 'rgba(51,65,85,.4)' },
-                    ticks: { color: '#475569', font: { size: 11 } }
-                },
-                y: {
-                    grid:  { color: 'rgba(51,65,85,.4)' },
-                    ticks: { color: '#475569', font: { size: 11 }, callback: v => fmt(v) }
-                }
+                x: { grid:{color:'#F1F5F9'}, ticks:{color:'#94A3B8',font:{size:11}} },
+                y: { grid:{color:'#F1F5F9'}, ticks:{color:'#94A3B8',font:{size:11}, callback:v=>fmt(v)} }
             }
         }
     });
 }
 
-/* ── Tab / chip helpers ── */
-function updateTabs() {
-    document.querySelectorAll('.tab').forEach(t => {
-        t.classList.toggle('has-data', !!state.data[t.dataset.tab]);
-    });
-}
-
+/* ════════════════════════════════════════════
+   CHIPS & FILES
+════════════════════════════════════════════ */
 function updateChips() {
     const el = document.getElementById('chips');
-    el.innerHTML = Object.entries(state.files).map(([metric, fname]) => `
+    el.innerHTML = Object.entries(state.files).map(([m, fname]) => `
         <div class="chip">
-            <span>${fname}</span>
-            <span class="chip-x" data-metric="${metric}" title="제거">✕</span>
+            <span>${METRIC_CFG[m].label}: ${fname}</span>
+            <span class="chip-x" data-metric="${m}">✕</span>
         </div>`).join('');
     el.querySelectorAll('.chip-x').forEach(x => {
         x.addEventListener('click', e => {
             e.stopPropagation();
             const m = x.dataset.metric;
             delete state.files[m];
-            state.data[m] = null;
+            state.raw[m] = null;
             updateChips();
-            updateTabs();
-            renderContent(m);
+            render();
         });
     });
 }
 
-function switchTab(metric) {
-    document.querySelectorAll('.tab').forEach(t =>
-        t.classList.toggle('active', t.dataset.tab === metric));
-    document.querySelectorAll('.tab-content').forEach(c =>
-        c.classList.toggle('active', c.id === 'tab-' + metric));
-}
-
-/* ── File processing ── */
-function processFile(file) {
+async function processFile(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = e => {
             const result = parseCSV(e.target.result, file.name);
             if (result.error) { reject(result.error); return; }
-            state.data[result.metric]  = { dates: result.dates, games: result.games };
+            state.raw[result.metric]   = { dates:result.dates, games:result.games };
             state.files[result.metric] = file.name;
             resolve(result.metric);
         };
@@ -535,40 +686,27 @@ async function handleFiles(files) {
     for (const file of files) {
         if (!file.name.toLowerCase().endsWith('.csv')) continue;
         try {
-            const metric = await processFile(file);
+            await processFile(file);
             updateChips();
-            updateTabs();
-            renderContent(metric);
-            switchTab(metric);   // auto-switch to uploaded metric tab
-        } catch (err) {
-            alert(`⚠️ ${file.name}\n${err}`);
-        }
+            render();
+        } catch(err) { alert(`⚠️ ${file.name}\n${err}`); }
     }
 }
 
-/* ── Events ── */
+/* ════════════════════════════════════════════
+   EVENTS
+════════════════════════════════════════════ */
 const zone  = document.getElementById('uploadZone');
 const input = document.getElementById('fileInput');
 
-zone.addEventListener('click',      () => input.click());
-zone.addEventListener('dragover',   e  => { e.preventDefault(); zone.classList.add('over'); });
-zone.addEventListener('dragleave',  ()  => zone.classList.remove('over'));
+zone.addEventListener('click',     () => input.click());
+zone.addEventListener('dragover',  e  => { e.preventDefault(); zone.classList.add('over'); });
+zone.addEventListener('dragleave', ()  => zone.classList.remove('over'));
 zone.addEventListener('drop', e => {
-    e.preventDefault();
-    zone.classList.remove('over');
+    e.preventDefault(); zone.classList.remove('over');
     handleFiles([...e.dataTransfer.files]);
 });
-input.addEventListener('change', () => {
-    handleFiles([...input.files]);
-    input.value = '';   // allow re-selecting same file
-});
-
-document.querySelectorAll('.tab').forEach(tab => {
-    tab.addEventListener('click', () => switchTab(tab.dataset.tab));
-});
-
-/* ── Init ── */
-['DAU', 'Downloads', 'Revenue'].forEach(renderContent);
+input.addEventListener('change', () => { handleFiles([...input.files]); input.value=''; });
 </script>
 
 </body>
