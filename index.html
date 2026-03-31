@@ -1,713 +1,1051 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SensorTower Competitive Intelligence</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-    <style>
-        :root {
-            --bg:       #F1F5F9;
-            --white:    #FFFFFF;
-            --border:   #E2E8F0;
-            --text:     #0F172A;
-            --muted:    #64748B;
-            --light:    #94A3B8;
-            --pubg:     #1D4ED8;
-            --pubg-bg:  #EFF6FF;
-            --pubg-bd:  #BFDBFE;
-            --up:       #16A34A;
-            --up-bg:    #F0FDF4;
-            --dn:       #DC2626;
-            --dn-bg:    #FEF2F2;
-            --header:   #0F172A;
-        }
-        * { margin:0; padding:0; box-sizing:border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
-
-        /* ── Header ── */
-        .header { background:var(--header); color:#F1F5F9; padding:18px 40px; display:flex; justify-content:space-between; align-items:center; }
-        .header-left h1 { font-size:17px; font-weight:700; letter-spacing:-.3px; }
-        .header-left p  { font-size:12px; color:#94A3B8; margin-top:2px; }
-        .header-right   { font-size:12px; color:#64748B; text-align:right; line-height:1.6; }
-
-        /* ── Upload ── */
-        .upload-wrap { padding:20px 40px 0; }
-        .upload-zone {
-            background:var(--white);
-            border:1.5px dashed var(--border);
-            border-radius:10px;
-            padding:20px 28px;
-            display:flex;
-            align-items:center;
-            gap:16px;
-            cursor:pointer;
-            transition:border-color .2s, background .2s;
-        }
-        .upload-zone:hover, .upload-zone.over { border-color:var(--pubg); background:var(--pubg-bg); }
-        .upload-zone .uz-icon { font-size:24px; flex-shrink:0; }
-        .upload-zone h3 { font-size:14px; font-weight:600; }
-        .upload-zone p  { font-size:12px; color:var(--muted); margin-top:2px; }
-        .chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
-        .chip {
-            background:#EFF6FF; border:1px solid #BFDBFE;
-            border-radius:16px; padding:3px 10px 3px 12px;
-            font-size:11px; color:#1D4ED8;
-            display:flex; align-items:center; gap:5px;
-        }
-        .chip-x { cursor:pointer; color:#93C5FD; font-size:13px; transition:color .15s; }
-        .chip-x:hover { color:var(--dn); }
-
-        /* ── Main ── */
-        .main { padding:24px 40px; max-width:1400px; margin:0 auto; }
-
-        /* ── Period banner ── */
-        .period-banner {
-            display:flex; align-items:center; gap:16px;
-            background:var(--white);
-            border:1px solid var(--border);
-            border-radius:8px;
-            padding:12px 20px;
-            margin-bottom:20px;
-            font-size:13px;
-        }
-        .period-banner .pb-label { color:var(--muted); }
-        .period-banner .pb-val   { font-weight:700; }
-        .pb-sep { color:var(--border); }
-        .badge {
-            background:#FFF7ED; border:1px solid #FED7AA;
-            color:#EA580C; border-radius:4px;
-            padding:2px 8px; font-size:11px; font-weight:600;
-        }
-        .badge.ok { background:#F0FDF4; border-color:#BBF7D0; color:#16A34A; }
-
-        /* ── Section title ── */
-        .sec-title {
-            font-size:11px; font-weight:700;
-            text-transform:uppercase; letter-spacing:.8px;
-            color:var(--muted); margin-bottom:12px;
-            display:flex; align-items:center; gap:8px;
-        }
-        .sec-title::after { content:''; flex:1; height:1px; background:var(--border); }
-
-        /* ── PUBG Spotlight ── */
-        .spotlight {
-            background:var(--white);
-            border:1px solid var(--pubg-bd);
-            border-left:4px solid var(--pubg);
-            border-radius:8px;
-            padding:20px 24px;
-            margin-bottom:20px;
-        }
-        .spotlight-header {
-            display:flex; justify-content:space-between; align-items:center;
-            margin-bottom:16px;
-        }
-        .spotlight-header h2 { font-size:16px; font-weight:700; color:var(--pubg); }
-        .spotlight-header .sp-period { font-size:12px; color:var(--muted); }
-        .sp-cards { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
-        @media(max-width:700px){ .sp-cards { grid-template-columns:1fr; } }
-        .sp-card {
-            background:var(--pubg-bg);
-            border:1px solid var(--pubg-bd);
-            border-radius:8px;
-            padding:14px 16px;
-        }
-        .sp-card.na-card {
-            background:var(--bg);
-            border-color:var(--border);
-            opacity:.6;
-        }
-        .sp-card-label { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.5px; color:var(--pubg); margin-bottom:8px; }
-        .sp-card.na-card .sp-card-label { color:var(--muted); }
-        .sp-val { font-size:28px; font-weight:800; letter-spacing:-1px; color:var(--text); line-height:1; margin-bottom:4px; }
-        .sp-sub { font-size:11px; color:var(--muted); margin-bottom:10px; }
-        .sp-changes { display:flex; flex-direction:column; gap:4px; }
-        .change-row { display:flex; justify-content:space-between; align-items:center; }
-        .change-label { font-size:11px; font-weight:600; color:var(--muted); }
-        .change-val { font-size:13px; font-weight:700; padding:2px 8px; border-radius:4px; }
-        .change-val.up   { color:var(--up); background:var(--up-bg); }
-        .change-val.dn   { color:var(--dn); background:var(--dn-bg); }
-        .change-val.flat { color:var(--muted); background:var(--bg); }
-        .change-val.na   { color:var(--light); background:var(--bg); font-weight:400; font-size:12px; }
-
-        /* ── Competitive Table ── */
-        .table-card {
-            background:var(--white);
-            border:1px solid var(--border);
-            border-radius:8px;
-            overflow:auto;
-            margin-bottom:20px;
-        }
-        table { width:100%; border-collapse:collapse; font-size:13px; white-space:nowrap; }
-        thead tr:first-child th {
-            background:#F8FAFC;
-            padding:10px 14px 6px;
-            text-align:center;
-            font-size:11px; font-weight:700;
-            text-transform:uppercase; letter-spacing:.5px;
-            color:var(--muted);
-            border-bottom:1px solid var(--border);
-        }
-        thead tr:first-child th:first-child { text-align:left; }
-        thead tr:last-child th {
-            background:#F8FAFC;
-            padding:6px 14px 10px;
-            text-align:right;
-            font-size:11px; font-weight:600;
-            color:var(--light);
-            border-bottom:2px solid var(--border);
-        }
-        thead tr:last-child th:first-child { text-align:left; color:var(--muted); }
-        .th-group { border-left:1px solid var(--border); }
-        tbody td {
-            padding:10px 14px;
-            border-bottom:1px solid #F1F5F9;
-            text-align:right;
-            color:var(--muted);
-        }
-        tbody td:first-child { text-align:left; font-weight:600; color:var(--text); }
-        tbody td.td-group { border-left:1px solid var(--border); }
-        tbody tr.pubg-row td { background:var(--pubg-bg); }
-        tbody tr.pubg-row td:first-child { color:var(--pubg); }
-        tbody tr:last-child td { border-bottom:none; }
-        tbody tr:hover td { background:#F8FAFC; }
-        tbody tr.pubg-row:hover td { background:#DBEAFE; }
-        .td-val { font-weight:700; color:var(--text); }
-        .td-up  { color:var(--up); font-weight:600; }
-        .td-dn  { color:var(--dn); font-weight:600; }
-        .td-na  { color:var(--light); }
-        .td-game { display:flex; align-items:center; gap:8px; }
-        .td-dot  { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
-
-        /* ── Trend Chart ── */
-        .trend-card {
-            background:var(--white);
-            border:1px solid var(--border);
-            border-radius:8px;
-            padding:20px 24px;
-            margin-bottom:20px;
-        }
-        .trend-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
-        .metric-toggle { display:flex; gap:4px; }
-        .mt-btn {
-            padding:5px 14px;
-            border:1px solid var(--border);
-            border-radius:6px;
-            font-size:12px; font-weight:500;
-            background:var(--white);
-            color:var(--muted);
-            cursor:pointer;
-            transition:all .15s;
-        }
-        .mt-btn:hover { border-color:var(--pubg); color:var(--pubg); }
-        .mt-btn.active { background:var(--pubg); color:#fff; border-color:var(--pubg); }
-        .trend-canvas-wrap { height:280px; position:relative; }
-
-        /* ── Empty state ── */
-        .empty { text-align:center; padding:80px 20px; color:var(--muted); }
-        .empty .e-icon { font-size:40px; margin-bottom:12px; }
-        .empty h3 { font-size:16px; color:var(--text); font-weight:600; margin-bottom:6px; }
-        .empty p { font-size:13px; }
-
-        /* ── Footer ── */
-        .footer { padding:20px 40px; font-size:11px; color:var(--light); border-top:1px solid var(--border); display:flex; justify-content:space-between; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SensorTower Competitive Intelligence</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<style>
+:root{
+  --bg:#F1F5F9; --white:#FFFFFF; --border:#E2E8F0; --border2:#CBD5E1;
+  --text:#0F172A; --muted:#64748B; --light:#94A3B8;
+  --pubg:#1D4ED8; --pubg-lt:#EFF6FF; --pubg-bd:#BFDBFE;
+  --up:#16A34A; --up-lt:#F0FDF4; --up-bd:#86EFAC;
+  --dn:#DC2626; --dn-lt:#FEF2F2; --dn-bd:#FECACA;
+  --hdr:#0F172A;
+  --shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.04);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:13px;}
+/* ── HEADER ── */
+.hdr{background:var(--hdr);color:#F1F5F9;padding:16px 40px;display:flex;justify-content:space-between;align-items:center;}
+.hdr h1{font-size:16px;font-weight:700;letter-spacing:-.3px;}
+.hdr p{font-size:11px;color:#64748B;margin-top:3px;}
+.hdr-right{font-size:11px;color:#475569;text-align:right;line-height:1.7;}
+/* ── UPLOAD ── */
+.upload-wrap{padding:16px 40px 0;}
+.upload-zone{
+  background:var(--white);border:1.5px dashed var(--border);border-radius:8px;
+  padding:16px 20px;display:flex;align-items:center;gap:14px;cursor:pointer;
+  transition:border-color .2s,background .2s;box-shadow:var(--shadow);
+}
+.upload-zone:hover,.upload-zone.over{border-color:var(--pubg);background:var(--pubg-lt);}
+.upload-zone h3{font-size:13px;font-weight:600;}
+.upload-zone p{font-size:11px;color:var(--muted);margin-top:2px;}
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;}
+.chip{background:var(--pubg-lt);border:1px solid var(--pubg-bd);border-radius:12px;
+  padding:2px 8px 2px 10px;font-size:11px;color:var(--pubg);display:flex;align-items:center;gap:4px;}
+.chip-x{cursor:pointer;color:#93C5FD;transition:color .15s;}
+.chip-x:hover{color:var(--dn);}
+/* ── MAIN ── */
+.main{padding:20px 40px;max-width:1400px;margin:0 auto;}
+/* ── PERIOD BANNER ── */
+.period-banner{
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  background:var(--white);border:1px solid var(--border);border-radius:8px;
+  padding:10px 18px;margin-bottom:20px;box-shadow:var(--shadow);font-size:12px;
+}
+.pb-lbl{color:var(--muted);}
+.pb-val{font-weight:700;}
+.pb-sep{color:var(--border2);}
+.badge{border-radius:4px;padding:2px 7px;font-size:10px;font-weight:700;letter-spacing:.3px;}
+.badge-mtd{background:#FFF7ED;border:1px solid #FED7AA;color:#EA580C;}
+.badge-full{background:var(--up-lt);border:1px solid var(--up-bd);color:var(--up);}
+.badge-na{background:#F8FAFC;border:1px solid var(--border);color:var(--light);}
+/* ── SECTION TITLE ── */
+.sec{margin-bottom:20px;}
+.sec-title{
+  font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;
+  color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:8px;
+}
+.sec-title::after{content:'';flex:1;height:1px;background:var(--border);}
+/* ── CARDS ── */
+.card{background:var(--white);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow);}
+/* ── SPOTLIGHT ── */
+.spotlight{border-left:4px solid var(--pubg);padding:18px 22px;margin-bottom:20px;}
+.spotlight.card{background:linear-gradient(135deg,#EFF6FF 0%,#FFFFFF 60%);}
+.sp-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+.sp-header h2{font-size:15px;font-weight:800;color:var(--pubg);}
+.sp-header small{font-size:11px;color:var(--muted);}
+.sp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.sp-card{background:var(--white);border:1px solid var(--pubg-bd);border-radius:6px;padding:14px;}
+.sp-card.empty{border-color:var(--border);background:var(--bg);opacity:.55;}
+.sp-metric-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--pubg);margin-bottom:6px;}
+.sp-card.empty .sp-metric-lbl{color:var(--muted);}
+.sp-val{font-size:26px;font-weight:800;letter-spacing:-1px;line-height:1;color:var(--text);margin-bottom:3px;}
+.sp-sub{font-size:10px;color:var(--muted);margin-bottom:10px;}
+.sp-rows{display:flex;flex-direction:column;gap:5px;}
+.sp-row{display:flex;justify-content:space-between;align-items:center;}
+.sp-row-lbl{font-size:10px;font-weight:700;color:var(--muted);}
+.chg{font-size:12px;font-weight:700;padding:2px 7px;border-radius:4px;}
+.chg.up{color:var(--up);background:var(--up-lt);}
+.chg.dn{color:var(--dn);background:var(--dn-lt);}
+.chg.flat{color:var(--muted);background:#F8FAFC;}
+.chg.na{color:var(--light);background:#F8FAFC;font-weight:400;font-size:11px;}
+/* ── INSIGHTS ── */
+.insights{padding:14px 18px;margin-bottom:20px;}
+.ins-item{display:flex;align-items:flex-start;gap:10px;padding:6px 0;border-bottom:1px solid #F8FAFC;}
+.ins-item:last-child{border-bottom:none;}
+.ins-icon{font-size:15px;flex-shrink:0;margin-top:1px;}
+.ins-text{font-size:12px;line-height:1.6;color:var(--text);}
+/* ── DONUTS ── */
+.donut-row{display:flex;gap:14px;margin-bottom:20px;}
+.donut-card{flex:1;min-width:0;padding:16px 18px;}
+.donut-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;text-align:center;}
+.donut-wrap{position:relative;height:160px;}
+.donut-legend{margin-top:10px;display:flex;flex-direction:column;gap:4px;}
+.dl-item{display:flex;align-items:center;justify-content:space-between;font-size:11px;}
+.dl-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-right:6px;}
+.dl-name{flex:1;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.dl-pct{font-weight:700;color:var(--text);}
+/* ── COMPETITIVE TABLE ── */
+.table-wrap{overflow:auto;border-radius:8px;margin-bottom:20px;box-shadow:var(--shadow);}
+table{width:100%;border-collapse:collapse;white-space:nowrap;font-size:12px;}
+thead tr:first-child th{
+  background:#F1F5F9;padding:8px 12px 5px;text-align:center;
+  font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;
+  color:var(--muted);border-bottom:1px solid var(--border);
+}
+thead tr:first-child th:first-child,thead tr:first-child th:nth-child(2){text-align:left;}
+thead tr:last-child th{
+  background:#F8FAFC;padding:4px 12px 9px;text-align:right;
+  font-size:10px;font-weight:600;color:var(--light);border-bottom:2px solid var(--border);
+}
+thead tr:last-child th:first-child{text-align:left;color:var(--muted);}
+thead tr:last-child th:nth-child(2){text-align:center;}
+.th-grp{border-left:1px solid var(--border);}
+tbody td{padding:9px 12px;border-bottom:1px solid #F8FAFC;text-align:right;color:var(--muted);}
+tbody td:first-child{text-align:left;font-weight:600;color:var(--text);}
+tbody td:nth-child(2){text-align:center;padding:6px 12px;}
+.td-grp{border-left:1px solid var(--border);}
+.td-val{font-weight:700;color:var(--text);}
+.td-up{color:var(--up);font-weight:700;}
+.td-dn{color:var(--dn);font-weight:700;}
+.td-na{color:var(--light);}
+tbody tr.pubg-row td{background:var(--pubg-lt);}
+tbody tr.pubg-row td:first-child{color:var(--pubg);}
+tbody tr:last-child td{border-bottom:none;}
+tbody tr:hover td{background:#F0F9FF;}
+tbody tr.pubg-row:hover td{background:#DBEAFE;}
+.game-cell{display:flex;align-items:center;gap:7px;}
+.g-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+/* ── CHART CARDS ── */
+.chart-card{padding:18px 22px;margin-bottom:20px;}
+.chart-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+.chart-title{font-size:12px;font-weight:700;color:var(--text);}
+.chart-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+.metric-toggle{display:flex;gap:4px;}
+.mt-btn{
+  padding:4px 12px;border:1px solid var(--border);border-radius:5px;
+  font-size:11px;font-weight:500;background:var(--white);color:var(--muted);
+  cursor:pointer;transition:all .15s;
+}
+.mt-btn:hover{border-color:var(--pubg);color:var(--pubg);}
+.mt-btn.on{background:var(--pubg);color:#fff;border-color:var(--pubg);}
+.ch-wrap{position:relative;}
+/* ── HEATMAP ── */
+.heatmap-table{width:100%;border-collapse:collapse;font-size:11px;}
+.heatmap-table th{
+  padding:6px 8px;background:#F8FAFC;border:1px solid var(--border);
+  font-size:10px;font-weight:600;color:var(--muted);white-space:nowrap;text-align:center;
+}
+.heatmap-table th:first-child{text-align:left;min-width:130px;}
+.heatmap-table td{
+  padding:7px 8px;border:1px solid var(--border);text-align:center;
+  line-height:1.3;min-width:64px;
+}
+.heatmap-table td:first-child{text-align:left;font-weight:600;background:var(--white);}
+.hm-val{font-size:11px;font-weight:700;display:block;}
+.hm-pct{font-size:10px;display:block;margin-top:1px;}
+/* ── EMPTY ── */
+.empty{text-align:center;padding:70px 20px;color:var(--muted);}
+.empty .ei{font-size:40px;margin-bottom:12px;}
+.empty h3{font-size:16px;color:var(--text);font-weight:700;margin-bottom:6px;}
+.empty p{font-size:12px;line-height:1.7;}
+/* ── FOOTER ── */
+.footer{padding:16px 40px;font-size:10px;color:var(--light);border-top:1px solid var(--border);
+  display:flex;justify-content:space-between;margin-top:10px;}
+/* ── 2-COL GRID ── */
+.col2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px;}
+.col2 .chart-card{margin-bottom:0;}
+@media(max-width:900px){
+  .col2{grid-template-columns:1fr;}
+  .sp-grid{grid-template-columns:1fr;}
+  .donut-row{flex-direction:column;}
+  .main{padding:16px 20px;}
+  .hdr,.upload-wrap,.footer{padding-left:20px;padding-right:20px;}
+}
+</style>
 </head>
 <body>
 
-<div class="header">
-    <div class="header-left">
-        <h1>SensorTower Competitive Intelligence</h1>
-        <p>Mobile Battle Royale — Monthly Performance Report</p>
-    </div>
-    <div class="header-right" id="headerRight">
-        데이터를 업로드하면<br>리포트가 자동 생성됩니다
-    </div>
+<div class="hdr">
+  <div>
+    <h1>SensorTower Competitive Intelligence</h1>
+    <p>Mobile Battle Royale — Monthly Performance Report</p>
+  </div>
+  <div class="hdr-right" id="hdrRight">데이터를 업로드하면<br>리포트가 자동 생성됩니다</div>
 </div>
 
 <div class="upload-wrap">
-    <div class="upload-zone" id="uploadZone">
-        <input type="file" id="fileInput" accept=".csv" multiple style="display:none">
-        <div class="uz-icon">📂</div>
-        <div style="flex:1">
-            <h3>SensorTower CSV 업로드</h3>
-            <p>DAU · 다운로드 · 매출 파일 (기간이 길수록 MoM / YoY 정확도 향상)</p>
-            <div class="chips" id="chips"></div>
-        </div>
-        <div style="font-size:12px;color:var(--light);flex-shrink:0">클릭 또는<br>드래그&드롭</div>
+  <div class="upload-zone" id="uploadZone">
+    <input type="file" id="fileInput" accept=".csv" multiple style="display:none">
+    <div style="font-size:24px;flex-shrink:0">📂</div>
+    <div style="flex:1">
+      <h3>SensorTower CSV 업로드</h3>
+      <p>DAU · 다운로드 · 매출 파일 — 기간이 길수록 MoM / YoY 정확도 향상 (최소 2개월 권장)</p>
+      <div class="chips" id="chips"></div>
     </div>
+    <div style="font-size:11px;color:var(--light);flex-shrink:0;text-align:center">클릭 또는<br>드래그&드롭</div>
+  </div>
 </div>
 
 <div class="main" id="mainReport">
-    <div class="empty">
-        <div class="e-icon">📊</div>
-        <h3>리포트를 생성하려면 CSV 파일을 업로드하세요</h3>
-        <p>SensorTower에서 DAU · 다운로드 · 매출 데이터를 내려받아 위에 올려주세요<br>
-           MoM(전월 대비) 및 YoY(전년 동월 대비) 분석을 위해 최소 2개월 이상 데이터를 권장합니다</p>
-    </div>
+  <div class="empty">
+    <div class="ei">📊</div>
+    <h3>SensorTower CSV 파일을 업로드하세요</h3>
+    <p>DAU · 다운로드 · 매출 파일을 위에 드래그&드롭하면<br>
+    MoM · YoY 분석 리포트가 자동으로 생성됩니다.<br><br>
+    <strong>9가지 시각화</strong> — 스포트라이트 · 인사이트 · 점유율 · 경쟁 테이블 · MoM 랭킹<br>
+    월별 추이 · 점유율 변화 · 성장률 인덱스 · MoM 히트맵</p>
+  </div>
 </div>
 
 <div class="footer">
-    <span>SensorTower Competitive Intelligence Dashboard</span>
-    <span>Powered by PUBG MOBILE Analytics</span>
+  <span>SensorTower Competitive Intelligence Dashboard</span>
+  <span id="footerTs"></span>
 </div>
 
 <script>
-/* ════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════
    CONFIG
-════════════════════════════════════════════ */
+══════════════════════════════════════════════════════ */
 const METRIC_KW = {
-    DAU:       ['DAU'],
-    Downloads: ['Downloads','Download','다운로드'],
-    Revenue:   ['Revenue','매출']
+  DAU:       ['DAU'],
+  Downloads: ['Downloads','Download','다운로드'],
+  Revenue:   ['Revenue','매출']
 };
 const METRIC_CFG = {
-    DAU:       { label:'DAU',    sub:'일 평균',  agg:'avg' },
-    Downloads: { label:'다운로드', sub:'월 합계', agg:'sum' },
-    Revenue:   { label:'매출',    sub:'월 합계',  agg:'sum' }
+  DAU:       {label:'DAU',       short:'DAU',  sub:'일 평균', agg:'avg'},
+  Downloads: {label:'다운로드',  short:'DL',   sub:'월 합계', agg:'sum'},
+  Revenue:   {label:'매출',      short:'Rev',  sub:'월 합계', agg:'sum'}
 };
-const COLORS_OTHER = ['#EA580C','#DC2626','#059669','#7C3AED','#D97706','#0891B2','#DB2777'];
+const PALETTE = ['#1D4ED8','#EA580C','#DC2626','#059669','#7C3AED','#D97706','#0891B2','#DB2777','#65A30D'];
 
-const state = {
-    raw:    { DAU:null, Downloads:null, Revenue:null },
-    files:  {},
-    chart:  null,
-    activeTrend: null
+/* ══════════════════════════════════════════════════════
+   STATE
+══════════════════════════════════════════════════════ */
+const S = {
+  raw:    {DAU:null,Downloads:null,Revenue:null},
+  files:  {},
+  charts: {},
+  trend:  null, share: null, indexed: null
 };
 
-/* ════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════
    UTILS
-════════════════════════════════════════════ */
-function fmt(n, type) {
-    if (n == null) return '—';
-    if (n >= 1e9) return (n/1e9).toFixed(2) + 'B';
-    if (n >= 1e6) return (n/1e6).toFixed(2) + 'M';
-    if (n >= 1e3) return (n/1e3).toFixed(1) + 'K';
-    return Math.round(n).toLocaleString();
+══════════════════════════════════════════════════════ */
+function fmt(n){
+  if(n==null||isNaN(n))return'—';
+  const a=Math.abs(n);
+  if(a>=1e9)return(n/1e9).toFixed(2)+'B';
+  if(a>=1e6)return(n/1e6).toFixed(2)+'M';
+  if(a>=1e3)return(n/1e3).toFixed(1)+'K';
+  return Math.round(n).toLocaleString();
 }
-function fmtPct(v) {
-    if (v == null) return null;
-    const sign = v >= 0 ? '+' : '';
-    return `${sign}${v.toFixed(1)}%`;
+function fmtPct(v,d=1){
+  if(v==null)return null;
+  return(v>=0?'+':'')+v.toFixed(d)+'%';
 }
-function fmtMonth(m) {
-    if (!m) return '';
-    const [y, mo] = m.split('-');
-    const names = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    return `${names[parseInt(mo)-1]} ${y}`;
+function fmtM(m){
+  if(!m)return'—';
+  const[y,mo]=m.split('-');
+  return['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+mo-1]+' '+y;
 }
-function isPubg(name) { return name.toUpperCase().includes('PUBG'); }
-function avg(arr)  { return arr.reduce((a,b)=>a+b,0)/arr.length; }
-function sum(arr)  { return arr.reduce((a,b)=>a+b,0); }
-function pct(cur, prev) {
-    if (prev == null || prev === 0 || cur == null) return null;
-    return ((cur - prev) / prev) * 100;
+function fmtMS(m){
+  const[y,mo]=m.split('-');
+  return['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+mo-1]+" '"+y.slice(2);
 }
-function prevMonth(m) {
-    const [y, mo] = m.split('-').map(Number);
-    let py=y, pm=mo-1;
-    if (pm===0) { pm=12; py--; }
-    return `${py}-${String(pm).padStart(2,'0')}`;
+function isPubg(n){return n.toUpperCase().includes('PUBG');}
+function avg(a){return a.reduce((s,v)=>s+v,0)/a.length;}
+function sum(a){return a.reduce((s,v)=>s+v,0);}
+function pct(c,p){if(p==null||p===0||c==null)return null;return(c-p)/p*100;}
+function prevM(m){
+  const[y,mo]=m.split('-').map(Number);
+  let py=y,pm=mo-1;if(pm===0){pm=12;py--;}
+  return`${py}-${String(pm).padStart(2,'0')}`;
 }
-function yoyMonth(m) {
-    const [y, mo] = m.split('-');
-    return `${parseInt(y)-1}-${mo}`;
+function yoyM(m){const[y,mo]=m.split('-');return`${+y-1}-${mo}`;}
+function chgCls(v){if(v==null)return'na';if(Math.abs(v)<0.05)return'flat';return v>0?'up':'dn';}
+function arrow(v){if(v==null||Math.abs(v)<0.05)return'';return v>0?'▲ ':'▼ ';}
+
+function heatBg(v){
+  if(v==null)return'#F8FAFC';
+  if(v>15)return'#14532D';if(v>8)return'#166534';if(v>3)return'#4ADE80';if(v>0.5)return'#BBF7D0';
+  if(v>-0.5)return'#F8FAFC';
+  if(v>-3)return'#FECACA';if(v>-8)return'#F87171';if(v>-15)return'#B91C1C';return'#7F1D1D';
 }
-function changeClass(v) {
-    if (v == null) return 'na';
-    if (Math.abs(v) < 0.05) return 'flat';
-    return v > 0 ? 'up' : 'dn';
-}
-function arrow(v) {
-    if (v == null) return '';
-    if (v > 0) return '▲ ';
-    if (v < 0) return '▼ ';
-    return '— ';
+function heatFg(v){
+  if(v==null)return'#94A3B8';
+  return Math.abs(v)>8?'#FFFFFF':'#0F172A';
 }
 
-/* ════════════════════════════════════════════
-   CSV PARSING
-════════════════════════════════════════════ */
-function detectMetric(headers) {
-    for (const [m, kws] of Object.entries(METRIC_KW))
-        if (headers.some(h => kws.some(k => h.trimEnd().endsWith(k)))) return m;
-    return null;
+function sparkSVG(vals,color,w=72,h=22){
+  const vv=vals.filter(v=>v!=null);
+  if(vv.length<2)return'<span style="color:#CBD5E1">—</span>';
+  const mx=Math.max(...vv),mn=Math.min(...vv),rng=(mx-mn)||mx||1;
+  const n=vals.length,pts=[];
+  vals.forEach((v,i)=>{
+    if(v==null)return;
+    const x=(i/(n-1))*(w-4)+2;
+    const y=(h-4)-(v-mn)/rng*(h-4)+2;
+    pts.push([x.toFixed(1),y.toFixed(1)]);
+  });
+  const d=pts.map((p,i)=>`${i?'L':'M'}${p[0]},${p[1]}`).join(' ');
+  const last=pts[pts.length-1];
+  return`<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" style="display:block">
+    <path d="${d}" fill="none" stroke="${color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="${last[0]}" cy="${last[1]}" r="2.5" fill="${color}"/>
+  </svg>`;
 }
-function detectMetricFile(name) {
-    const n = name.toLowerCase();
-    if (n.includes('dau')) return 'DAU';
-    if (n.includes('download') || n.includes('다운로드')) return 'Downloads';
-    if (n.includes('revenue')  || n.includes('매출'))  return 'Revenue';
-    return null;
+
+/* ══════════════════════════════════════════════════════
+   PARSING
+══════════════════════════════════════════════════════ */
+function detectMetric(headers){
+  for(const[m,kws]of Object.entries(METRIC_KW))
+    if(headers.some(h=>kws.some(k=>h.trimEnd().endsWith(k))))return m;
+  return null;
 }
-function extractGame(col, metric) {
-    for (const k of (METRIC_KW[metric]||[]))
-        if (col.trimEnd().endsWith(' '+k)) return col.slice(0,-(k.length+1)).trim();
-    return col.trim();
+function detectMetricFile(name){
+  const n=name.toLowerCase();
+  if(n.includes('dau'))return'DAU';
+  if(n.includes('download')||n.includes('다운로드'))return'Downloads';
+  if(n.includes('revenue')||n.includes('매출'))return'Revenue';
+  return null;
 }
-function parseCSV(text, filename) {
-    const r = Papa.parse(text.trim(), { header:true, skipEmptyLines:true });
-    if (!r.data?.length) return { error:'데이터 없음' };
-    const headers  = r.meta.fields;
-    const dataCols = headers.slice(1);
-    const metric   = detectMetric(dataCols) || detectMetricFile(filename);
-    if (!metric) return { error:'지표 타입 인식 불가' };
-    const games = {};
-    dataCols.forEach(h => { games[extractGame(h,metric)] = []; });
-    const dates = [];
-    r.data.forEach(row => {
-        const vals = Object.values(row);
-        dates.push(vals[0]);
-        dataCols.forEach((h,i) => {
-            games[extractGame(h,metric)].push(parseFloat(String(vals[i+1]).replace(/,/g,''))||0);
-        });
+function extractGame(col,metric){
+  for(const k of(METRIC_KW[metric]||[]))
+    if(col.trimEnd().endsWith(' '+k))return col.slice(0,-(k.length+1)).trim();
+  return col.trim();
+}
+function parseCSV(text,filename){
+  const r=Papa.parse(text.trim(),{header:true,skipEmptyLines:true});
+  if(!r.data?.length)return{error:'데이터 없음'};
+  const headers=r.meta.fields,dataCols=headers.slice(1);
+  const metric=detectMetric(dataCols)||detectMetricFile(filename);
+  if(!metric)return{error:'지표 타입 인식 불가'};
+  const games={};
+  dataCols.forEach(h=>{games[extractGame(h,metric)]=[];});
+  const dates=[];
+  r.data.forEach(row=>{
+    const vals=Object.values(row);
+    dates.push(vals[0]);
+    dataCols.forEach((h,i)=>{
+      games[extractGame(h,metric)].push(parseFloat(String(vals[i+1]).replace(/,/g,''))||0);
     });
-    return { metric, dates, games };
+  });
+  return{metric,dates,games};
 }
 
-/* ════════════════════════════════════════════
-   MONTHLY AGGREGATION
-════════════════════════════════════════════ */
-function getMonthly(metric) {
-    const { dates, games } = state.raw[metric];
-    const allMonths = [...new Set(dates.map(d=>d.substring(0,7)))].sort();
-    const agg = METRIC_CFG[metric].agg;
-    const monthly = {};
-    Object.entries(games).forEach(([game, vals]) => {
-        monthly[game] = {};
-        allMonths.forEach(m => {
-            const idxs = dates.reduce((a,d,i) => d.startsWith(m) ? [...a,i] : a, []);
-            const slice = idxs.map(i => vals[i]);
-            monthly[game][m] = slice.length ? (agg==='avg' ? avg(slice) : sum(slice)) : null;
-        });
+/* ══════════════════════════════════════════════════════
+   AGGREGATION
+══════════════════════════════════════════════════════ */
+function getMonthly(metric){
+  const{dates,games}=S.raw[metric];
+  const allMonths=[...new Set(dates.map(d=>d.substring(0,7)))].sort();
+  const agg=METRIC_CFG[metric].agg;
+  const monthly={};
+  Object.entries(games).forEach(([g,vals])=>{
+    monthly[g]={};
+    allMonths.forEach(m=>{
+      const idxs=dates.reduce((a,d,i)=>d.startsWith(m)?[...a,i]:a,[]);
+      const sl=idxs.map(i=>vals[i]);
+      monthly[g][m]=sl.length?(agg==='avg'?avg(sl):sum(sl)):null;
     });
-    return { months:allMonths, games:monthly };
+  });
+  return{months:allMonths,games:monthly};
 }
 
-/* ════════════════════════════════════════════
-   COLOR MAP
-════════════════════════════════════════════ */
-function buildColorMap(sortedGames) {
-    const map = {};
-    let ci = 0;
-    sortedGames.forEach(g => {
-        map[g] = isPubg(g) ? '#1D4ED8' : COLORS_OTHER[ci++ % COLORS_OTHER.length];
-    });
-    return map;
-}
+/* ══════════════════════════════════════════════════════
+   CHART HELPERS
+══════════════════════════════════════════════════════ */
+const TTP={
+  backgroundColor:'#0F172A',borderColor:'#334155',borderWidth:1,
+  titleColor:'#F1F5F9',bodyColor:'#94A3B8',padding:10,cornerRadius:6
+};
+const TICKS={color:'#94A3B8',font:{size:11}};
+const GRID={color:'#F1F5F9'};
 
-/* ════════════════════════════════════════════
-   RENDER
-════════════════════════════════════════════ */
-function render() {
-    const available = Object.keys(state.raw).filter(m => state.raw[m]);
-    if (!available.length) {
-        document.getElementById('mainReport').innerHTML = `
-            <div class="empty">
-                <div class="e-icon">📊</div>
-                <h3>리포트를 생성하려면 CSV 파일을 업로드하세요</h3>
-                <p>SensorTower에서 DAU · 다운로드 · 매출 데이터를 내려받아 위에 올려주세요<br>
-                   MoM(전월 대비) 및 YoY(전년 동월 대비) 분석을 위해 최소 2개월 이상 데이터를 권장합니다</p>
-            </div>`;
-        document.getElementById('headerRight').innerHTML = '데이터를 업로드하면<br>리포트가 자동 생성됩니다';
-        return;
+function killChart(id){if(S.charts[id]){S.charts[id].destroy();delete S.charts[id];}}
+
+function mkLine(id,labels,datasets,opts={}){
+  killChart(id);
+  const ctx=document.getElementById(id)?.getContext('2d');
+  if(!ctx)return;
+  S.charts[id]=new Chart(ctx,{
+    type:'line',
+    data:{labels,datasets},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{labels:{color:'#64748B',boxWidth:10,font:{size:11},padding:12}},
+        tooltip:{...TTP,callbacks:{label:c=>` ${c.dataset.label}: ${fmt(c.raw)}`,...(opts.tooltipCb||{})}}
+      },
+      scales:{
+        x:{grid:GRID,ticks:TICKS},
+        y:{grid:GRID,ticks:{...TICKS,callback:opts.yFmt||(v=>fmt(v))},...(opts.yOpts||{})}
+      },
+      ...opts.extra
     }
+  });
+}
 
-    // Use first available metric to determine periods
-    const primaryMetric = available.includes('DAU') ? 'DAU' : available[0];
-    const primaryMonthly = getMonthly(primaryMetric);
-    const { months } = primaryMonthly;
-    const curM   = months[months.length-1];
-    const prevM  = months.includes(prevMonth(curM)) ? prevMonth(curM) : null;
-    const yoyM   = months.includes(yoyMonth(curM))  ? yoyMonth(curM)  : null;
-
-    // Check if current month is complete (MTD detection)
-    const rawDates = state.raw[primaryMetric].dates;
-    const curDays  = rawDates.filter(d=>d.startsWith(curM)).length;
-    const daysInMonth = new Date(parseInt(curM.split('-')[0]), parseInt(curM.split('-')[1]), 0).getDate();
-    const isMTD = curDays < daysInMonth;
-
-    // Collect all games across all metrics
-    const allGames = [...new Set(available.flatMap(m => Object.keys(state.raw[m].games)))];
-    const pubgGame = allGames.find(isPubg) || allGames[0];
-    const otherGames = allGames.filter(g=>g!==pubgGame).sort((a,b)=>{
-        const mA = getMonthly(primaryMetric).games[a];
-        const mB = getMonthly(primaryMetric).games[b];
-        if(!mA || !mB) return 0;
-        return (mB[curM]||0)-(mA[curM]||0);
-    });
-    const sortedGames = [pubgGame, ...otherGames];
-    const colorMap = buildColorMap(sortedGames);
-
-    // Header update
-    document.getElementById('headerRight').innerHTML =
-        `기준 월: <strong style="color:#F1F5F9">${fmtMonth(curM)}${isMTD?' MTD':''}</strong><br>${available.map(m=>METRIC_CFG[m].label).join(' · ')} 분석`;
-
-    // Build period banner
-    const periodHTML = `
-        <div class="period-banner">
-            <span class="pb-label">분석 기간</span>
-            <span class="pb-val">${fmtMonth(months[0])} → ${fmtMonth(curM)}</span>
-            <span class="pb-sep">|</span>
-            <span class="pb-label">기준 월</span>
-            <span class="pb-val">${fmtMonth(curM)} ${isMTD?`(${curDays}일 MTD)`:''}</span>
-            <span class="badge ${isMTD?'':'ok'}">${isMTD?'MTD':'Full Month'}</span>
-            <span class="pb-sep">|</span>
-            <span class="pb-label">MoM</span>
-            <span class="pb-val ${prevM?'':''}"> ${prevM ? fmtMonth(prevM) : '—'}</span>
-            <span class="pb-sep">|</span>
-            <span class="pb-label">YoY</span>
-            <span class="pb-val">${yoyM ? fmtMonth(yoyM) : '—'}</span>
-        </div>`;
-
-    // Build PUBG spotlight
-    function spCard(metric) {
-        if (!state.raw[metric]) {
-            return `<div class="sp-card na-card">
-                <div class="sp-card-label">${METRIC_CFG[metric].label}</div>
-                <div class="sp-val" style="font-size:18px;color:var(--light)">데이터 없음</div>
-            </div>`;
-        }
-        const md = getMonthly(metric);
-        const gd = md.games[pubgGame];
-        if (!gd) return '';
-        const cur  = gd[curM];
-        const prev = prevM ? gd[prevM] : null;
-        const yoy  = yoyM  ? gd[yoyM]  : null;
-        const mom  = pct(cur, prev);
-        const yoyP = pct(cur, yoy);
-        return `
-            <div class="sp-card">
-                <div class="sp-card-label">${METRIC_CFG[metric].label}</div>
-                <div class="sp-val">${fmt(cur)}</div>
-                <div class="sp-sub">${METRIC_CFG[metric].sub}</div>
-                <div class="sp-changes">
-                    <div class="change-row">
-                        <span class="change-label">MoM</span>
-                        <span class="change-val ${changeClass(mom)}">${mom!=null ? arrow(mom)+fmtPct(mom) : 'N/A'}</span>
-                    </div>
-                    <div class="change-row">
-                        <span class="change-label">YoY</span>
-                        <span class="change-val ${changeClass(yoyP)}">${yoyP!=null ? arrow(yoyP)+fmtPct(yoyP) : 'N/A'}</span>
-                    </div>
-                </div>
-            </div>`;
+function mkBar(id,labels,datasets,opts={}){
+  killChart(id);
+  const ctx=document.getElementById(id)?.getContext('2d');
+  if(!ctx)return;
+  S.charts[id]=new Chart(ctx,{
+    type:'bar',
+    data:{labels,datasets},
+    options:{
+      indexAxis:opts.horizontal?'y':'x',
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{display:opts.legend||false,labels:{color:'#64748B',boxWidth:10,font:{size:11}}},
+        tooltip:{...TTP,callbacks:{label:c=>` ${c.dataset.label||''}: ${opts.pctMode?fmtPct(c.raw):fmt(c.raw)}`}}
+      },
+      scales:{
+        x:{grid:opts.horizontal?{color:'#F1F5F9'}:{display:false},ticks:{...TICKS,callback:opts.xFmt||(v=>v)},..  (opts.xOpts||{})},
+        y:{grid:opts.horizontal?{display:false}:GRID,ticks:{...TICKS,callback:opts.yFmt||(v=>v)},...(opts.yOpts||{})}
+      },
+      ...opts.extra
     }
-    const spotlightHTML = `
-        <div class="spotlight">
-            <div class="spotlight-header">
-                <h2>▪ ${pubgGame}</h2>
-                <span class="sp-period">${fmtMonth(curM)}${isMTD?' MTD':''}</span>
-            </div>
-            <div class="sp-cards">
-                ${spCard('DAU')}
-                ${spCard('Downloads')}
-                ${spCard('Revenue')}
-            </div>
-        </div>`;
+  });
+}
 
-    // Build competitive table
-    function tdChange(v) {
-        if (v==null) return `<td class="td-na">N/A</td>`;
-        const cls = changeClass(v);
-        const tdCls = cls==='up' ? 'td-up' : cls==='dn' ? 'td-dn' : 'td-na';
-        return `<td class="${tdCls}">${arrow(v)}${fmtPct(v)}</td>`;
+function mkDonut(id,labels,data,colors){
+  killChart(id);
+  const ctx=document.getElementById(id)?.getContext('2d');
+  if(!ctx)return;
+  S.charts[id]=new Chart(ctx,{
+    type:'doughnut',
+    data:{labels,datasets:[{data,backgroundColor:colors,borderWidth:2,borderColor:'#fff',hoverOffset:4}]},
+    options:{
+      responsive:true,maintainAspectRatio:false,cutout:'65%',
+      plugins:{
+        legend:{display:false},
+        tooltip:{...TTP,callbacks:{label:c=>{
+          const t=c.dataset.data.reduce((a,b)=>a+b,0);
+          return` ${c.label}: ${(c.raw/t*100).toFixed(1)}%`;
+        }}}
+      }
     }
+  });
+}
 
-    let theadTop = `<th>게임</th>`;
-    let theadBot = `<th>Game</th>`;
-    available.forEach((m,i) => {
-        theadTop += `<th colspan="3" class="th-group">${METRIC_CFG[m].label}</th>`;
-        theadBot += `<th class="th-group">${fmtMonth(curM)}</th><th>MoM</th><th>YoY</th>`;
-    });
+/* ══════════════════════════════════════════════════════
+   INSIGHTS
+══════════════════════════════════════════════════════ */
+function generateInsights(monthly,periods,pubgGame,sortedGames,available){
+  const{current:curM,prev:prevM,yoy:yoyM}=periods;
+  const ins=[];
 
-    const tbodyHTML = sortedGames.map(g => {
-        const isP = isPubg(g);
-        let row = `<tr class="${isP?'pubg-row':''}">
-            <td><div class="td-game">
-                <span class="td-dot" style="background:${colorMap[g]}"></span>
-                ${g}
-            </div></td>`;
-        available.forEach(m => {
-            const md = getMonthly(m);
-            const gd = md.games[g];
-            if (!gd) {
-                row += `<td class="td-group td-na" colspan="3">—</td>`;
-            } else {
-                const cur  = gd[curM];
-                const prev = prevM ? gd[prevM] : null;
-                const yoy  = yoyM  ? gd[yoyM]  : null;
-                row += `<td class="td-val td-group">${fmt(cur)}</td>`;
-                row += tdChange(pct(cur,prev));
-                row += tdChange(pct(cur,yoy));
-            }
-        });
-        row += `</tr>`;
-        return row;
+  // 1. PUBG market share (DAU)
+  if(available.includes('DAU')){
+    const md=monthly['DAU'];
+    const total=sortedGames.reduce((s,g)=>s+(md.games[g]?.[curM]||0),0);
+    const pubgVal=md.games[pubgGame]?.[curM]||0;
+    const share=total>0?pubgVal/total*100:0;
+    let delta=null;
+    if(prevM){
+      const pt=sortedGames.reduce((s,g)=>s+(md.games[g]?.[prevM]||0),0);
+      const pp=pt>0?(md.games[pubgGame]?.[prevM]||0)/pt*100:0;
+      delta=share-pp;
+    }
+    const dStr=delta!=null?` — MoM ${delta>0?'▲ +':'▼ '}${Math.abs(delta).toFixed(1)}pp`:'';
+    ins.push({t:delta==null?'neu':delta>0?'pos':'neg',i:'📊',
+      txt:`PUBG MOBILE DAU 시장점유율 <strong>${share.toFixed(1)}%</strong>${dStr}`});
+
+    // vs leader
+    const leader=sortedGames.find(g=>!isPubg(g));
+    if(leader){
+      const lv=md.games[leader]?.[curM]||0;
+      if(lv>0&&pubgVal>0){
+        const ratio=lv/pubgVal;
+        ins.push({t:'neu',i:'⚔️',
+          txt:ratio>1
+            ?`${leader} DAU는 PUBG의 <strong>${ratio.toFixed(1)}×</strong> 규모 (${fmt(lv)} vs ${fmt(pubgVal)})`
+            :`PUBG가 ${leader}보다 <strong>${(1/ratio).toFixed(1)}×</strong> 더 큰 규모`});
+      }
+    }
+  }
+
+  // 2. MoM winner & loser
+  if(prevM&&available.length>0){
+    const metric=available.includes('DAU')?'DAU':available[0];
+    const md=monthly[metric];
+    const chgs=sortedGames.map(g=>({g,v:pct(md.games[g]?.[curM],md.games[g]?.[prevM])}))
+      .filter(x=>x.v!=null).sort((a,b)=>b.v-a.v);
+    if(chgs.length>0){
+      const w=chgs[0],l=chgs[chgs.length-1];
+      ins.push({t:w.v>0?'pos':'neg',i:'🏆',
+        txt:`이번 달 ${METRIC_CFG[metric].label} MoM 1위: <strong>${w.g}</strong> (<strong>${fmtPct(w.v)}</strong>)`});
+      if(l.v<0&&l.g!==w.g)
+        ins.push({t:'neg',i:'📉',
+          txt:`최대 하락: <strong>${l.g}</strong> (${fmtPct(l.v)} MoM, ${METRIC_CFG[metric].label})`});
+    }
+  }
+
+  // 3. Consecutive streak for PUBG
+  if(available.includes('DAU')){
+    const md=monthly['DAU'];
+    const ms=Object.keys(md.games[pubgGame]||{}).filter(m=>md.games[pubgGame][m]!=null).sort();
+    let streak=0,dir=null;
+    for(let i=ms.length-1;i>=1;i--){
+      const c=md.games[pubgGame][ms[i]],p=md.games[pubgGame][ms[i-1]];
+      if(c==null||p==null)break;
+      const d=c>p?'up':c<p?'dn':'flat';
+      if(dir===null)dir=d;
+      if(d===dir&&d!=='flat')streak++;else break;
+    }
+    if(streak>=2&&dir)
+      ins.push({t:dir==='up'?'pos':'neg',i:dir==='up'?'📈':'📉',
+        txt:`PUBG DAU <strong>${dir==='up'?'연속 상승':'연속 하락'} ${streak}개월</strong> 추세`});
+  }
+
+  // 4. YoY market size
+  if(yoyM&&available.includes('DAU')){
+    const md=monthly['DAU'];
+    const tc=sortedGames.reduce((s,g)=>s+(md.games[g]?.[curM]||0),0);
+    const ty=sortedGames.reduce((s,g)=>s+(md.games[g]?.[yoyM]||0),0);
+    const mc=pct(tc,ty);
+    if(mc!=null)
+      ins.push({t:mc>0?'pos':'neg',i:'🌍',
+        txt:`장르 전체 DAU YoY: <strong>${fmtPct(mc)}</strong> (${fmt(tc)} vs ${fmt(ty)} 전년 동월)`});
+  }
+
+  return ins.slice(0,6);
+}
+
+/* ══════════════════════════════════════════════════════
+   HTML BUILDERS
+══════════════════════════════════════════════════════ */
+function buildPeriodBanner(months,periods,isMTD,curDays){
+  const{current:curM,prev:prevM,yoy:yoyM}=periods;
+  return`<div class="period-banner">
+    <span class="pb-lbl">분석 기간</span>
+    <span class="pb-val">${fmtM(months[0])} → ${fmtM(curM)}</span>
+    <span class="pb-sep">|</span>
+    <span class="pb-lbl">기준 월</span>
+    <span class="pb-val">${fmtM(curM)}${isMTD?` (${curDays}일 MTD)`:''}</span>
+    <span class="badge ${isMTD?'badge-mtd':'badge-full'}">${isMTD?'MTD':'Full Month'}</span>
+    <span class="pb-sep">|</span>
+    <span class="pb-lbl">MoM</span>
+    <span class="pb-val">${prevM?fmtM(prevM):'—'}</span>
+    ${prevM?'':`<span class="badge badge-na">데이터 없음</span>`}
+    <span class="pb-sep">|</span>
+    <span class="pb-lbl">YoY</span>
+    <span class="pb-val">${yoyM?fmtM(yoyM):'—'}</span>
+    ${yoyM?'':`<span class="badge badge-na">데이터 없음</span>`}
+  </div>`;
+}
+
+function buildSpotlight(monthly,periods,pubgGame,available){
+  const{current:curM,prev:prevM,yoy:yoyM}=periods;
+  function card(metric){
+    if(!S.raw[metric])
+      return`<div class="sp-card empty"><div class="sp-metric-lbl">${METRIC_CFG[metric].label}</div>
+        <div class="sp-val" style="font-size:16px;color:var(--light)">파일 없음</div></div>`;
+    const md=monthly[metric],gd=md.games[pubgGame];
+    if(!gd)return'';
+    const cur=gd[curM],prv=prevM?gd[prevM]:null,yo=yoyM?gd[yoyM]:null;
+    const mom=pct(cur,prv),yoyP=pct(cur,yo);
+    return`<div class="sp-card">
+      <div class="sp-metric-lbl">${METRIC_CFG[metric].label}</div>
+      <div class="sp-val">${fmt(cur)}</div>
+      <div class="sp-sub">${METRIC_CFG[metric].sub} · ${fmtM(curM)}</div>
+      <div class="sp-rows">
+        <div class="sp-row"><span class="sp-row-lbl">MoM</span>
+          <span class="chg ${chgCls(mom)}">${mom!=null?arrow(mom)+fmtPct(mom):'N/A'}</span></div>
+        <div class="sp-row"><span class="sp-row-lbl">YoY</span>
+          <span class="chg ${chgCls(yoyP)}">${yoyP!=null?arrow(yoyP)+fmtPct(yoyP):'N/A'}</span></div>
+      </div>
+    </div>`;
+  }
+  return`<div class="spotlight card sec">
+    <div class="spotlight-header sp-header">
+      <h2>▪ ${pubgGame}</h2>
+      <small>Spotlight — ${fmtM(periods.current)}</small>
+    </div>
+    <div class="sp-grid">${card('DAU')}${card('Downloads')}${card('Revenue')}</div>
+  </div>`;
+}
+
+function buildInsights(ins){
+  if(!ins.length)return'';
+  const rows=ins.map(x=>`<div class="ins-item">
+    <span class="ins-icon">${x.i}</span>
+    <span class="ins-text">${x.txt}</span>
+  </div>`).join('');
+  return`<div class="sec">
+    <div class="sec-title">Key Insights</div>
+    <div class="card insights">${rows}</div>
+  </div>`;
+}
+
+function buildDonuts(monthly,periods,sortedGames,colorMap,available){
+  if(!available.length)return'';
+  const{current:curM}=periods;
+  const cards=available.map(metric=>{
+    const md=monthly[metric];
+    const vals=sortedGames.map(g=>md.games[g]?.[curM]||0);
+    const total=sum(vals)||1;
+    const items=sortedGames.map((g,i)=>{
+      const pctV=vals[i]/total*100;
+      return`<div class="dl-item">
+        <span class="dl-dot" style="background:${colorMap[g]}"></span>
+        <span class="dl-name">${g}</span>
+        <span class="dl-pct">${pctV.toFixed(1)}%</span>
+      </div>`;
     }).join('');
+    return`<div class="card donut-card">
+      <div class="donut-title">${METRIC_CFG[metric].label} 점유율</div>
+      <div class="donut-wrap"><canvas id="donut-${metric}"></canvas></div>
+      <div class="donut-legend">${items}</div>
+    </div>`;
+  }).join('');
+  return`<div class="sec">
+    <div class="sec-title">Market Share — ${fmtM(curM)}</div>
+    <div class="donut-row">${cards}</div>
+  </div>`;
+}
 
-    const tableHTML = `
-        <div class="table-card">
-            <table>
-                <thead>
-                    <tr>${theadTop}</tr>
-                    <tr>${theadBot}</tr>
-                </thead>
-                <tbody>${tbodyHTML}</tbody>
-            </table>
-        </div>`;
-
-    // Build trend chart section
-    if (!state.activeTrend || !available.includes(state.activeTrend))
-        state.activeTrend = available[0];
-
-    const toggleHTML = available.map(m =>
-        `<button class="mt-btn ${m===state.activeTrend?'active':''}" data-metric="${m}">${METRIC_CFG[m].label}</button>`
-    ).join('');
-
-    const trendHTML = `
-        <div class="trend-card">
-            <div class="trend-header">
-                <div class="sec-title" style="margin:0;flex:1">월별 추이</div>
-                <div class="metric-toggle">${toggleHTML}</div>
-            </div>
-            <div class="trend-canvas-wrap"><canvas id="trendChart"></canvas></div>
-        </div>`;
-
-    // Assemble report
-    document.getElementById('mainReport').innerHTML =
-        periodHTML +
-        `<div class="sec-title">PUBG MOBILE Spotlight</div>` +
-        spotlightHTML +
-        `<div class="sec-title">Competitive Landscape</div>` +
-        tableHTML +
-        `<div class="sec-title">Monthly Trend</div>` +
-        trendHTML;
-
-    // Wire toggle buttons
-    document.querySelectorAll('.mt-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            state.activeTrend = btn.dataset.metric;
-            render();
-        });
+function buildTable(monthly,periods,sortedGames,colorMap,available){
+  const{current:curM,prev:prevM,yoy:yoyM}=periods;
+  function tdChg(v){
+    if(v==null)return`<td class="td-na">N/A</td>`;
+    const c=chgCls(v),cls=c==='up'?'td-up':c==='dn'?'td-dn':'td-na';
+    return`<td class="${cls}">${arrow(v)}${fmtPct(v)}</td>`;
+  }
+  let th1=`<th>게임</th><th>추이</th>`,th2=`<th></th><th></th>`;
+  available.forEach((m,i)=>{
+    th1+=`<th colspan="3" class="th-grp">${METRIC_CFG[m].label}</th>`;
+    th2+=`<th class="th-grp">${fmtMS(curM)}</th><th>MoM</th><th>YoY</th>`;
+  });
+  const rows=sortedGames.map(g=>{
+    const isP=isPubg(g);
+    // sparkline from first available metric
+    const spMetric=available[0];
+    const spData=spMetric?Object.values(monthly[spMetric].games[g]||{}):[];
+    let row=`<tr class="${isP?'pubg-row':''}">
+      <td><div class="game-cell">
+        <span class="g-dot" style="background:${colorMap[g]}"></span>${g}
+      </div></td>
+      <td>${sparkSVG(spData,colorMap[g])}</td>`;
+    available.forEach(m=>{
+      const md=monthly[m],gd=md.games[g];
+      if(!gd){row+=`<td class="td-grp td-na" colspan="3">—</td>`;return;}
+      const cur=gd[curM],prv=prevM?gd[prevM]:null,yo=yoyM?gd[yoyM]:null;
+      row+=`<td class="td-val td-grp">${fmt(cur)}</td>`;
+      row+=tdChg(pct(cur,prv));
+      row+=tdChg(pct(cur,yo));
     });
-
-    // Draw trend chart
-    drawTrend(sortedGames, colorMap);
+    row+=`</tr>`;
+    return row;
+  }).join('');
+  return`<div class="sec">
+    <div class="sec-title">Competitive Landscape</div>
+    <div class="table-wrap card"><table>
+      <thead><tr>${th1}</tr><tr>${th2}</tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>
+  </div>`;
 }
 
-function drawTrend(sortedGames, colorMap) {
-    const metric = state.activeTrend;
-    if (!state.raw[metric]) return;
-    const md = getMonthly(metric);
-    const { months } = md;
+function buildMoMChart(monthly,periods,sortedGames,colorMap,available){
+  if(!periods.prev||!available.length)return'';
+  const{current:curM,prev:prevM}=periods;
+  const metric=available.includes('DAU')?'DAU':available[0];
+  const md=monthly[metric];
+  const sorted=[...sortedGames].sort((a,b)=>{
+    const va=pct(md.games[a]?.[curM],md.games[a]?.[prevM])||0;
+    const vb=pct(md.games[b]?.[curM],md.games[b]?.[prevM])||0;
+    return vb-va;
+  });
+  const vals=sorted.map(g=>pct(md.games[g]?.[curM],md.games[g]?.[prevM]));
+  const bgs=sorted.map(g=>isPubg(g)?colorMap[g]:vals[sorted.indexOf(g)]>=0?'#4ADE80':'#FCA5A5');
+  const bord=sorted.map(g=>isPubg(g)?colorMap[g]:vals[sorted.indexOf(g)]>=0?'#16A34A':'#DC2626');
+  return`<div class="sec">
+    <div class="sec-title">MoM Growth Ranking — ${fmtM(curM)} vs ${fmtM(prevM)}</div>
+    <div class="card chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">이번 달 MoM 성장률 비교 · ${METRIC_CFG[metric].label}</div>
+          <div class="chart-sub">게임별 전월 대비 성장률, 높은 순 정렬</div>
+        </div>
+      </div>
+      <div class="ch-wrap" style="height:${Math.max(160,sorted.length*42)}px">
+        <canvas id="chart-mom"></canvas>
+      </div>
+    </div>
+  </div>`;
+}
 
-    if (state.chart) state.chart.destroy();
-    const ctx = document.getElementById('trendChart').getContext('2d');
-    state.chart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: months.map(fmtMonth),
-            datasets: sortedGames.map(g => ({
-                label:           g,
-                data:            months.map(m => md.games[g]?.[m] ?? null),
-                borderColor:     colorMap[g],
-                backgroundColor: 'transparent',
-                borderWidth:     isPubg(g) ? 3 : 1.5,
-                pointRadius:     isPubg(g) ? 4 : 2.5,
-                pointHoverRadius: 6,
-                tension:         0.3,
-                spanGaps:        true,
-            }))
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            interaction: { mode:'index', intersect:false },
-            plugins: {
-                legend: { labels:{ color:'#64748B', boxWidth:12, font:{size:12} } },
-                tooltip: {
-                    backgroundColor: '#0F172A',
-                    borderColor:     '#334155',
-                    borderWidth:     1,
-                    titleColor:      '#F1F5F9',
-                    bodyColor:       '#94A3B8',
-                    callbacks: { label: c => ` ${c.dataset.label}: ${fmt(c.raw)}` }
-                }
-            },
-            scales: {
-                x: { grid:{color:'#F1F5F9'}, ticks:{color:'#94A3B8',font:{size:11}} },
-                y: { grid:{color:'#F1F5F9'}, ticks:{color:'#94A3B8',font:{size:11}, callback:v=>fmt(v)} }
-            }
-        }
+function buildTrend(periods){
+  const{current:curM}=periods;
+  const avl=Object.keys(S.raw).filter(m=>S.raw[m]);
+  if(!avl.length)return'';
+  if(!S.trend||!avl.includes(S.trend))S.trend=avl[0];
+  const tabs=avl.map(m=>`<button class="mt-btn ${m===S.trend?'on':''}" data-trend="${m}">${METRIC_CFG[m].label}</button>`).join('');
+  return`<div class="sec">
+    <div class="sec-title">Monthly Trend (절대값)</div>
+    <div class="card chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">월별 추이 · ${METRIC_CFG[S.trend].label}</div>
+          <div class="chart-sub">${METRIC_CFG[S.trend].sub} 기준, PUBG 굵은 선</div>
+        </div>
+        <div class="metric-toggle">${tabs}</div>
+      </div>
+      <div class="ch-wrap" style="height:280px"><canvas id="chart-trend"></canvas></div>
+    </div>
+  </div>`;
+}
+
+function buildShare(periods){
+  const avl=Object.keys(S.raw).filter(m=>S.raw[m]);
+  if(!avl.length)return'';
+  if(!S.share||!avl.includes(S.share))S.share=avl[0];
+  const tabs=avl.map(m=>`<button class="mt-btn ${m===S.share?'on':''}" data-share="${m}">${METRIC_CFG[m].label}</button>`).join('');
+  return`<div class="sec">
+    <div class="sec-title">Market Share Evolution (점유율 변화)</div>
+    <div class="card chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">월별 시장 점유율 변화 · ${METRIC_CFG[S.share].label}</div>
+          <div class="chart-sub">각 게임의 점유율이 어떻게 변화했는지</div>
+        </div>
+        <div class="metric-toggle">${tabs}</div>
+      </div>
+      <div class="ch-wrap" style="height:280px"><canvas id="chart-share"></canvas></div>
+    </div>
+  </div>`;
+}
+
+function buildIndexed(periods){
+  const avl=Object.keys(S.raw).filter(m=>S.raw[m]);
+  if(!avl.length)return'';
+  if(!S.indexed||!avl.includes(S.indexed))S.indexed=avl[0];
+  const tabs=avl.map(m=>`<button class="mt-btn ${m===S.indexed?'on':''}" data-indexed="${m}">${METRIC_CFG[m].label}</button>`).join('');
+  return`<div class="sec">
+    <div class="sec-title">Indexed Performance (Base = 100)</div>
+    <div class="card chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">상대적 성장률 비교 · ${METRIC_CFG[S.indexed].label}</div>
+          <div class="chart-sub">첫 달을 100으로 설정 — 누가 가장 빠르게 성장/하락했는지</div>
+        </div>
+        <div class="metric-toggle">${tabs}</div>
+      </div>
+      <div class="ch-wrap" style="height:280px"><canvas id="chart-indexed"></canvas></div>
+    </div>
+  </div>`;
+}
+
+function buildHeatmap(monthly,periods,sortedGames,colorMap,available){
+  if(!available.length)return'';
+  const metric=available.includes('DAU')?'DAU':available[0];
+  const md=monthly[metric];
+  const{months}=md;
+  if(months.length<2)return'';
+  const thCols=months.map(m=>`<th>${fmtMS(m)}</th>`).join('');
+  const rows=sortedGames.map(g=>{
+    const isP=isPubg(g);
+    const cells=months.map((m,i)=>{
+      const val=md.games[g]?.[m];
+      const prevVal=i>0?md.games[g]?.[months[i-1]]:null;
+      const change=pct(val,prevVal);
+      const bg=i===0?'#F8FAFC':heatBg(change);
+      const fg=i===0?'#94A3B8':heatFg(change);
+      return`<td style="background:${bg};color:${fg}">
+        <span class="hm-val" style="color:${fg}">${fmt(val)}</span>
+        <span class="hm-pct" style="color:${fg};opacity:.85">${i===0?'(기준)':change!=null?fmtPct(change,1):'—'}</span>
+      </td>`;
+    }).join('');
+    return`<tr>
+      <td><div class="game-cell">
+        <span class="g-dot" style="background:${colorMap[g]}"></span>
+        <span style="${isP?'color:var(--pubg);font-weight:800':''}">${g}</span>
+      </div></td>
+      ${cells}
+    </tr>`;
+  }).join('');
+  return`<div class="sec">
+    <div class="sec-title">Monthly MoM Heatmap — ${METRIC_CFG[metric].label} (초록=상승, 빨강=하락)</div>
+    <div class="card" style="overflow:auto;padding:0;">
+      <table class="heatmap-table">
+        <thead><tr><th>게임</th>${thCols}</tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+/* ══════════════════════════════════════════════════════
+   CHART CREATORS
+══════════════════════════════════════════════════════ */
+function createDonuts(monthly,periods,sortedGames,colorMap,available){
+  const{current:curM}=periods;
+  available.forEach(metric=>{
+    const md=monthly[metric];
+    const vals=sortedGames.map(g=>md.games[g]?.[curM]||0);
+    mkDonut(`donut-${metric}`,sortedGames,vals,sortedGames.map(g=>colorMap[g]));
+  });
+}
+
+function createMoMChart(monthly,periods,sortedGames,colorMap,available){
+  if(!periods.prev||!available.length)return;
+  const{current:curM,prev:prevM}=periods;
+  const metric=available.includes('DAU')?'DAU':available[0];
+  const md=monthly[metric];
+  const sorted=[...sortedGames].sort((a,b)=>{
+    return(pct(md.games[b]?.[curM],md.games[b]?.[prevM])||0)-(pct(md.games[a]?.[curM],md.games[a]?.[prevM])||0);
+  });
+  const vals=sorted.map(g=>pct(md.games[g]?.[curM],md.games[g]?.[prevM])||0);
+  const bgs=vals.map((v,i)=>isPubg(sorted[i])?colorMap[sorted[i]]:v>=0?'#4ADE80':'#FCA5A5');
+  mkBar('chart-mom',sorted,[{
+    label:'MoM %',data:vals,
+    backgroundColor:bgs,borderColor:vals.map((v,i)=>isPubg(sorted[i])?colorMap[sorted[i]]:v>=0?'#16A34A':'#DC2626'),
+    borderWidth:isPubg?[2]:1,borderRadius:4
+  }],{
+    horizontal:true,pctMode:true,
+    xFmt:v=>fmtPct(v,1),
+    xOpts:{ticks:{...TICKS,callback:v=>fmtPct(v,1)}},
+    yOpts:{ticks:{...TICKS,callback:v=>v.length>16?v.substring(0,14)+'…':v}},
+    extra:{plugins:{datalabels:{display:false}}}
+  });
+}
+
+function createTrendChart(monthly,sortedGames,colorMap){
+  const metric=S.trend;
+  if(!S.raw[metric])return;
+  const md=monthly[metric];
+  const{months}=md;
+  mkLine('chart-trend',months.map(fmtMS),sortedGames.map(g=>({
+    label:g,
+    data:months.map(m=>md.games[g]?.[m]??null),
+    borderColor:colorMap[g],backgroundColor:'transparent',
+    borderWidth:isPubg(g)?3:1.5,
+    pointRadius:isPubg(g)?3.5:2,pointHoverRadius:6,
+    tension:0.3,spanGaps:true
+  })));
+}
+
+function createShareChart(monthly,sortedGames,colorMap){
+  const metric=S.share;
+  if(!S.raw[metric])return;
+  const md=monthly[metric];
+  const{months}=md;
+  // Calculate % share per month
+  const labels=months.map(fmtMS);
+  const datasets=sortedGames.map(g=>({
+    label:g,
+    data:months.map(m=>{
+      const total=sortedGames.reduce((s,gg)=>s+(md.games[gg]?.[m]||0),0);
+      return total>0?(md.games[g]?.[m]||0)/total*100:0;
+    }),
+    borderColor:colorMap[g],backgroundColor:colorMap[g]+'40',
+    borderWidth:isPubg(g)?2.5:1.5,
+    pointRadius:isPubg(g)?3:2,tension:0.3,fill:true,spanGaps:true
+  }));
+  mkLine('chart-share',labels,datasets,{
+    yFmt:v=>v.toFixed(1)+'%',
+    yOpts:{stacked:true,max:100,ticks:{...TICKS,callback:v=>v+'%'}},
+    tooltipCb:{label:c=>` ${c.dataset.label}: ${c.raw.toFixed(1)}%`}
+  });
+}
+
+function createIndexedChart(monthly,sortedGames,colorMap){
+  const metric=S.indexed;
+  if(!S.raw[metric])return;
+  const md=monthly[metric];
+  const{months}=md;
+  const datasets=sortedGames.map(g=>{
+    const firstVal=months.map(m=>md.games[g]?.[m]).find(v=>v!=null&&v>0)||1;
+    return{
+      label:g,
+      data:months.map(m=>{
+        const v=md.games[g]?.[m];
+        return v!=null?v/firstVal*100:null;
+      }),
+      borderColor:colorMap[g],backgroundColor:'transparent',
+      borderWidth:isPubg(g)?3:1.5,
+      pointRadius:isPubg(g)?3.5:2,pointHoverRadius:6,
+      tension:0.3,spanGaps:true
+    };
+  });
+  // Add reference line at 100
+  datasets.push({
+    label:'Base (100)',
+    data:months.map(()=>100),
+    borderColor:'#CBD5E1',backgroundColor:'transparent',
+    borderWidth:1.5,borderDash:[5,4],
+    pointRadius:0,tension:0,
+    order:99
+  });
+  mkLine('chart-indexed',months.map(fmtMS),datasets,{
+    yFmt:v=>v.toFixed(0),
+    tooltipCb:{label:c=>c.dataset.label==='Base (100)'?null:` ${c.dataset.label}: ${c.raw?.toFixed(1)}`}
+  });
+}
+
+/* ══════════════════════════════════════════════════════
+   MAIN RENDER
+══════════════════════════════════════════════════════ */
+function render(){
+  const available=Object.keys(S.raw).filter(m=>S.raw[m]);
+  if(!available.length){
+    document.getElementById('mainReport').innerHTML=`<div class="empty">
+      <div class="ei">📊</div><h3>SensorTower CSV 파일을 업로드하세요</h3>
+      <p>DAU · 다운로드 · 매출 파일을 위에 드래그&드롭하면<br>MoM · YoY 분석 리포트가 자동으로 생성됩니다.<br><br>
+      <strong>9가지 시각화</strong> — 스포트라이트 · 인사이트 · 점유율 · 경쟁 테이블 · MoM 랭킹<br>
+      월별 추이 · 점유율 변화 · 성장률 인덱스 · MoM 히트맵</p></div>`;
+    document.getElementById('hdrRight').innerHTML='데이터를 업로드하면<br>리포트가 자동 생성됩니다';
+    return;
+  }
+
+  // Build monthly data for all available metrics
+  const monthly={};
+  available.forEach(m=>{monthly[m]=getMonthly(m);});
+
+  // Periods from first available metric
+  const primM=available.includes('DAU')?'DAU':available[0];
+  const{months}=monthly[primM];
+  const curM=months[months.length-1];
+  const pM=months.includes(prevM(curM))?prevM(curM):null;
+  const yM=months.includes(yoyM(curM))?yoyM(curM):null;
+  const periods={current:curM,prev:pM,yoy:yM};
+
+  // MTD check
+  const rawDates=S.raw[primM].dates;
+  const curDays=rawDates.filter(d=>d.startsWith(curM)).length;
+  const daysInMonth=new Date(+curM.split('-')[0],+curM.split('-')[1],0).getDate();
+  const isMTD=curDays<daysInMonth;
+
+  // Games + colors
+  const allGames=[...new Set(available.flatMap(m=>Object.keys(S.raw[m].games)))];
+  const pubgGame=allGames.find(isPubg)||allGames[0];
+  const others=allGames.filter(g=>g!==pubgGame).sort((a,b)=>{
+    const md=monthly[primM];
+    return(md.games[b]?.[curM]||0)-(md.games[a]?.[curM]||0);
+  });
+  const sortedGames=[pubgGame,...others];
+  const colorMap={};
+  let ci=0;
+  sortedGames.forEach(g=>{colorMap[g]=isPubg(g)?'#1D4ED8':PALETTE[1+ci++%( PALETTE.length-1)];});
+
+  // Insights
+  const ins=generateInsights(monthly,periods,pubgGame,sortedGames,available);
+
+  // Update header
+  document.getElementById('hdrRight').innerHTML=
+    `기준 월: <strong style="color:#F1F5F9">${fmtM(curM)}${isMTD?' MTD':''}</strong><br>`+
+    available.map(m=>METRIC_CFG[m].label).join(' · ')+' 분석';
+  document.getElementById('footerTs').textContent=
+    `Generated: ${new Date().toLocaleDateString('ko-KR')}`;
+
+  // Assemble HTML
+  const html=[
+    buildPeriodBanner(months,periods,isMTD,curDays),
+    `<div class="sec-title">PUBG MOBILE Spotlight</div>`,
+    buildSpotlight(monthly,periods,pubgGame,available),
+    buildInsights(ins),
+    buildDonuts(monthly,periods,sortedGames,colorMap,available),
+    buildTable(monthly,periods,sortedGames,colorMap,available),
+    buildMoMChart(monthly,periods,sortedGames,colorMap,available),
+    buildTrend(periods),
+    buildShare(periods),
+    buildIndexed(periods),
+    buildHeatmap(monthly,periods,sortedGames,colorMap,available)
+  ].join('');
+
+  document.getElementById('mainReport').innerHTML=html;
+
+  // Create charts (now that canvas elements exist)
+  createDonuts(monthly,periods,sortedGames,colorMap,available);
+  createMoMChart(monthly,periods,sortedGames,colorMap,available);
+  createTrendChart(monthly,sortedGames,colorMap);
+  createShareChart(monthly,sortedGames,colorMap);
+  createIndexedChart(monthly,sortedGames,colorMap);
+
+  // Wire metric toggle buttons
+  document.querySelectorAll('[data-trend]').forEach(b=>{
+    b.addEventListener('click',()=>{S.trend=b.dataset.trend;render();});
+  });
+  document.querySelectorAll('[data-share]').forEach(b=>{
+    b.addEventListener('click',()=>{S.share=b.dataset.share;render();});
+  });
+  document.querySelectorAll('[data-indexed]').forEach(b=>{
+    b.addEventListener('click',()=>{S.indexed=b.dataset.indexed;render();});
+  });
+}
+
+/* ══════════════════════════════════════════════════════
+   FILE HANDLING
+══════════════════════════════════════════════════════ */
+function updateChips(){
+  const el=document.getElementById('chips');
+  el.innerHTML=Object.entries(S.files).map(([m,fn])=>`
+    <div class="chip">
+      <span>${METRIC_CFG[m].label}: ${fn}</span>
+      <span class="chip-x" data-metric="${m}">✕</span>
+    </div>`).join('');
+  el.querySelectorAll('.chip-x').forEach(x=>{
+    x.addEventListener('click',e=>{
+      e.stopPropagation();
+      const m=x.dataset.metric;
+      delete S.files[m];S.raw[m]=null;
+      updateChips();render();
     });
+  });
 }
 
-/* ════════════════════════════════════════════
-   CHIPS & FILES
-════════════════════════════════════════════ */
-function updateChips() {
-    const el = document.getElementById('chips');
-    el.innerHTML = Object.entries(state.files).map(([m, fname]) => `
-        <div class="chip">
-            <span>${METRIC_CFG[m].label}: ${fname}</span>
-            <span class="chip-x" data-metric="${m}">✕</span>
-        </div>`).join('');
-    el.querySelectorAll('.chip-x').forEach(x => {
-        x.addEventListener('click', e => {
-            e.stopPropagation();
-            const m = x.dataset.metric;
-            delete state.files[m];
-            state.raw[m] = null;
-            updateChips();
-            render();
-        });
-    });
+async function processFile(file){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      const r=parseCSV(e.target.result,file.name);
+      if(r.error){reject(r.error);return;}
+      S.raw[r.metric]={dates:r.dates,games:r.games};
+      S.files[r.metric]=file.name;
+      resolve(r.metric);
+    };
+    reader.onerror=()=>reject('파일 읽기 실패');
+    reader.readAsText(file,'UTF-8');
+  });
 }
 
-async function processFile(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = e => {
-            const result = parseCSV(e.target.result, file.name);
-            if (result.error) { reject(result.error); return; }
-            state.raw[result.metric]   = { dates:result.dates, games:result.games };
-            state.files[result.metric] = file.name;
-            resolve(result.metric);
-        };
-        reader.onerror = () => reject('파일 읽기 실패');
-        reader.readAsText(file, 'UTF-8');
-    });
+async function handleFiles(files){
+  for(const file of files){
+    if(!file.name.toLowerCase().endsWith('.csv'))continue;
+    try{await processFile(file);updateChips();render();}
+    catch(err){alert(`⚠️ ${file.name}\n${err}`);}
+  }
 }
 
-async function handleFiles(files) {
-    for (const file of files) {
-        if (!file.name.toLowerCase().endsWith('.csv')) continue;
-        try {
-            await processFile(file);
-            updateChips();
-            render();
-        } catch(err) { alert(`⚠️ ${file.name}\n${err}`); }
-    }
-}
-
-/* ════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════
    EVENTS
-════════════════════════════════════════════ */
-const zone  = document.getElementById('uploadZone');
-const input = document.getElementById('fileInput');
-
-zone.addEventListener('click',     () => input.click());
-zone.addEventListener('dragover',  e  => { e.preventDefault(); zone.classList.add('over'); });
-zone.addEventListener('dragleave', ()  => zone.classList.remove('over'));
-zone.addEventListener('drop', e => {
-    e.preventDefault(); zone.classList.remove('over');
-    handleFiles([...e.dataTransfer.files]);
-});
-input.addEventListener('change', () => { handleFiles([...input.files]); input.value=''; });
+══════════════════════════════════════════════════════ */
+const zone=document.getElementById('uploadZone');
+const input=document.getElementById('fileInput');
+zone.addEventListener('click',()=>input.click());
+zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('over');});
+zone.addEventListener('dragleave',()=>zone.classList.remove('over'));
+zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('over');handleFiles([...e.dataTransfer.files]);});
+input.addEventListener('change',()=>{handleFiles([...input.files]);input.value='';});
 </script>
-
 </body>
 </html>
